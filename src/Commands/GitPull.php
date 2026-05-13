@@ -29,7 +29,7 @@ class GitPull extends Command
     {
         $this->startTime = microtime(true);
         $this->newLine();
-        $this->components->info('📦 Git Pull Deploy Pipeline');
+        $this->components->info('Git Pull Deploy Pipeline');
         $this->line(str_repeat('─', 60));
 
         // ── Phase 1: Pre-pull Snapshot ──────────────────────────────
@@ -103,7 +103,7 @@ class GitPull extends Command
 
         // Display detection results
         foreach ($this->actions as $step => $needed) {
-            $icon = $needed ? '⚡' : '·';
+            $icon = $needed ? '*' : '.';
             $label = match ($step) {
                 'composer' => 'composer.lock changed → composer install',
                 'migrate' => 'New migrations detected → migrate',
@@ -162,10 +162,10 @@ class GitPull extends Command
                 $status = trim(shell_exec("sudo supervisorctl status {$workerName}:* 2>/dev/null") ?? '');
 
                 if (empty($status) || str_contains($status, 'ERROR')) {
-                    $this->line("  ⚠ Supervisor group '{$workerName}' not found — running queue:restart only");
+                    $this->line("  [!] Supervisor group '{$workerName}' not found — running queue:restart only");
                     $this->call('queue:restart');
                 } elseif (str_contains($status, 'STOPPED') || str_contains($status, 'FATAL') || str_contains($status, 'EXITED')) {
-                    $this->line('  ⚠ Worker is stopped — starting it');
+                    $this->line('  [!] Worker is stopped — starting it');
                     system("sudo supervisorctl start {$workerName}:*");
                 } else {
                     $this->call('queue:restart');
@@ -184,7 +184,7 @@ class GitPull extends Command
 
         $elapsed = round(microtime(true) - $this->startTime, 1);
         $this->line(str_repeat('─', 60));
-        $this->components->info("✅ Deploy complete in {$elapsed}s");
+        $this->components->info("Deploy complete in {$elapsed}s");
 
         return self::SUCCESS;
     }

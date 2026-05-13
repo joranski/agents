@@ -7,19 +7,39 @@ export NVM_DIR="$HOME/.nvm"
 if [ -f .env ]; then
     export ANTHROPIC_API_KEY=$(grep '^ANTHROPIC_API_KEY=' .env | cut -d '=' -f2- | tr -d '"\r')
 fi
-if [ -z "$ANTHROPIC_API_KEY" ]; then exit 1; fi
+if [ -z "$ANTHROPIC_API_KEY" ]; then echo "Error: ANTHROPIC_API_KEY not set"; exit 1; fi
 
 if [ -f .ralph-stuck ]; then rm .ralph-stuck; fi
 if [ -f .ralph-complete ]; then rm .ralph-complete; fi
 
-if [ -n "$(git status --porcelain)" ]; then exit 1; fi
+if [ -n "$(git status --porcelain)" ]; then echo "Working directory dirty. Commit first."; exit 1; fi
 
-OPEN_ISSUES=$(gh issue list --state open --limit 1)
-if [ -z "$OPEN_ISSUES" ]; then exit 0; fi
+# --- Cost-saving pre-flight: only wake Anthropic if there is actual work ---
+HAS_WORK=0
+
+# Check 1: Open GitHub issues
+OPEN_ISSUES=$(gh issue list --state open --limit 1 2>/dev/null || true)
+if [ -n "$OPEN_ISSUES" ]; then
+    echo "Open issues found."
+    HAS_WORK=1
+fi
+
+# Check 2: Composer security audit
+AUDIT_OUTPUT=$(composer audit 2>&1)
+AUDIT_EXIT=$?
+if [ $AUDIT_EXIT -ne 0 ] || echo "$AUDIT_OUTPUT" | grep -q "Found"; then
+    echo "Security vulnerabilities detected."
+    HAS_WORK=1
+fi
+
+if [ "$HAS_WORK" -eq 0 ]; then
+    echo "No issues and no security vulnerabilities. Nothing to do."
+    exit 0
+fi
 
 ITERATIONS=${1:-10}
 BRANCH="night-shift-$(date +%Y%m%d-%H%M%S)"
-export CLAUDE_CODE_TASK_LIST_ID="swm-night-shift-$(date +%Y%m%d)"
+export CLAUDE_CODE_TASK_LIST_ID="night-shift-$(date +%Y%m%d)"
 
 git checkout main
 git pull origin main
@@ -27,13 +47,26 @@ git checkout -b "$BRANCH"
 
 for ((i=1; i<=ITERATIONS; i++)); do
     claude -p --dangerously-skip-permissions "$(cat <<'PROMPT'
-1. Fetch open issues using 'github_issues'. Filter out issues currently in_progress or completed in Tasks.
-2. If none remain, create `.ralph-complete` and exit.
-3. Pick one issue (prioritize bugs). Create an `in_progress` Task.
-4. INVESTIGATE app structure BEFORE editing files.
-5. Fix/Implement, write tests, format with `pint`, run tests.
-6. If stuck after 3 fails, mark Task `stuck`, create `.ralph-stuck` and exit.
-7. Commit (ISSUE #<num>: <desc>) and mark Task `completed`.
+You are the Night Shift agent. You have two sources of work:
+
+SOURCE 1: GitHub Issues
+1. Fetch open issues using `gh issue list --state open --limit 20`.
+2. Filter out issues currently in_progress or completed in Tasks.
+3. If issues remain, pick one (prioritize bugs). Create an `in_progress` Task.
+
+SOURCE 2: Security Vulnerabilities
+1. Run `composer audit` and check for vulnerabilities.
+2. If vulnerabilities exist, treat each as a work item — update the affected package
+   using `composer update <package>`, run tests, and commit the fix.
+3. Create a Task for the audit fix (e.g., "Fix CVE-XXXX in package/name").
+
+WORK RULES:
+- If no issues AND no audit findings remain, create `.ralph-complete` and exit.
+- INVESTIGATE app structure BEFORE editing files.
+- Fix/Implement, write tests, format with `vendor/bin/pint`, run tests.
+- If stuck after 3 fails, mark Task `stuck`, create `.ralph-stuck` and exit.
+- Commit with message format: `fix: <short-description>` (or `ISSUE #<num>: <desc>` for issues).
+- Mark Task `completed`.
 PROMPT
 )"
     if [ -f .ralph-stuck ]; then exit 1; fi

@@ -23,7 +23,7 @@ class AgentsInstall extends Command
     public function handle(): int
     {
         $this->newLine();
-        $this->components->info('🤖 Agents Installer');
+        $this->components->info('Agents Installer');
         $this->line(str_repeat('─', 60));
 
         $stubsPath = dirname(__DIR__, 2).'/stubs';
@@ -91,7 +91,7 @@ class AgentsInstall extends Command
         // ── Summary ─────────────────────────────────────────────────
         $this->newLine();
         $this->line(str_repeat('─', 60));
-        $this->components->info("✅ Installed: {$this->installed} | Skipped: {$this->skipped} (use --force to overwrite)");
+        $this->components->info("Installed: {$this->installed} | Skipped: {$this->skipped} (use --force to overwrite)");
         $this->newLine();
         $this->components->bulletList([
             'Skills: .agents/skills/ (21 AI agent skills)',
@@ -107,7 +107,7 @@ class AgentsInstall extends Command
     private function runSetupWizard(string $projectRoot): void
     {
         $this->newLine();
-        $this->components->info('🔧 Setup Wizard');
+        $this->components->info('Setup Wizard');
         $this->line('  Configure credentials and environment for this project.');
         $this->line('  Press Enter to skip any step.');
         $this->newLine();
@@ -136,7 +136,7 @@ class AgentsInstall extends Command
                     escapeshellarg($filamentEmail),
                     escapeshellarg($filamentToken),
                 ));
-                $this->line('  <info>✓</info> Filament Blueprint credentials saved to auth.json');
+                $this->line('  <info>OK</info> Filament Blueprint credentials saved to auth.json');
             }
         }
 
@@ -163,7 +163,7 @@ class AgentsInstall extends Command
                     escapeshellarg($fluxEmail),
                     escapeshellarg($fluxToken),
                 ));
-                $this->line('  <info>✓</info> Flux Pro credentials saved to auth.json');
+                $this->line('  <info>OK</info> Flux Pro credentials saved to auth.json');
             }
         }
 
@@ -179,7 +179,7 @@ class AgentsInstall extends Command
 
         if ($anthropicKey) {
             $this->setEnvValue($envPath, 'ANTHROPIC_API_KEY', $anthropicKey);
-            $this->line('  <info>✓</info> ANTHROPIC_API_KEY added to .env');
+            $this->line('  <info>OK</info> ANTHROPIC_API_KEY added to .env');
         }
 
         $this->newLine();
@@ -198,7 +198,7 @@ class AgentsInstall extends Command
 
         if ($workerName) {
             $this->setEnvValue($envPath, 'SUPERVISOR_WORKER', $workerName);
-            $this->line('  <info>✓</info> SUPERVISOR_WORKER added to .env');
+            $this->line('  <info>OK</info> SUPERVISOR_WORKER added to .env');
         }
 
         $this->newLine();
@@ -258,7 +258,7 @@ class AgentsInstall extends Command
 
         File::ensureDirectoryExists(dirname($target));
         File::copy($source, $target);
-        $this->line("  <info>✓</info> {$relative}");
+        $this->line("  <info>OK</info> {$relative}");
         $this->installed++;
     }
 
@@ -286,7 +286,7 @@ class AgentsInstall extends Command
 
         if (! empty($added)) {
             File::append($gitignorePath, "\n".implode("\n", $added)."\n");
-            $this->line('  <info>✓</info> .gitignore updated');
+            $this->line('  <info>OK</info> .gitignore updated');
         }
     }
 }

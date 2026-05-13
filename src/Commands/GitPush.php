@@ -17,7 +17,7 @@ class GitPush extends Command
     public function handle(): int
     {
         $this->newLine();
-        $this->components->info('🚀 Git Push Pipeline');
+        $this->components->info('Git Push Pipeline');
         $this->line(str_repeat('─', 60));
 
         // ── Phase 1: Preflight ──────────────────────────────────────
@@ -49,7 +49,7 @@ class GitPush extends Command
                 return self::FAILURE;
             }
         } else {
-            $this->line('  ✓ No pending migrations');
+            $this->line('  OK No pending migrations');
         }
 
         // 1c. Pint (code style)
@@ -77,7 +77,7 @@ class GitPush extends Command
                 return self::FAILURE;
             }
 
-            $this->line('  ✓ All tests passed');
+            $this->line('  OK All tests passed');
         }
 
         $this->newLine();
@@ -107,7 +107,7 @@ class GitPush extends Command
             if (! empty($filesToAdd)) {
                 $escaped = array_map('escapeshellarg', $filesToAdd);
                 system('git add '.implode(' ', $escaped));
-                $this->line('  ✓ Files staged');
+                $this->line('  OK Files staged');
             }
         }
 
@@ -151,7 +151,7 @@ class GitPush extends Command
             $escapedBranch = escapeshellarg($branch);
             system("git push origin {$escapedBranch}");
             $this->newLine();
-            $this->components->info('🚀 Pushed successfully!');
+            $this->components->info('Pushed successfully!');
         } else {
             $this->components->warn('Push cancelled. Your commit is local.');
         }
