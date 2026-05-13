@@ -158,7 +158,7 @@ class GitPull extends Command
         // ── Phase 6: Worker Restart ─────────────────────────────────
         if (! $this->isSkipped('workers')) {
             $this->runStep('Worker Restart', function () {
-                $workerName = config('app.supervisor_worker', 'mbi.test-worker');
+                $workerName = env('SUPERVISOR_WORKER', basename(base_path()).'-worker');
                 $status = trim(shell_exec("sudo supervisorctl status {$workerName}:* 2>/dev/null") ?? '');
 
                 if (empty($status) || str_contains($status, 'ERROR')) {
