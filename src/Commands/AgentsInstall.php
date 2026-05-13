@@ -215,7 +215,7 @@ class AgentsInstall extends Command
         }
 
         $content = File::get($envPath);
-        $escaped = str_contains($value, ' ') || str_contains($value, '#') ? "\"{$value}\"" : "\"{$value}\"";
+        $escaped = "\"{$value}\"";
         $pattern = "/^{$key}=.*/m";
 
         if (preg_match($pattern, $content)) {

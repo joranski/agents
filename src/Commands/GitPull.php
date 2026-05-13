@@ -197,15 +197,21 @@ class GitPull extends Command
 
         $this->runStep('Cache: Clear', function () {
             $this->call('optimize:clear');
-            $this->call('filament:clear-cached-components');
+
+            if ($this->getApplication()->has('filament:clear-cached-components')) {
+                $this->call('filament:clear-cached-components');
+            }
         });
 
         if (app()->environment('production')) {
             $this->runStep('Cache: Rebuild (production)', function () {
                 system('composer dump-autoload -o');
                 $this->call('optimize');
-                $this->call('route:clear'); // LaravelLocalization breaks route caching in Laravel 11
-                $this->call('filament:cache-components');
+                $this->call('route:clear');
+
+                if ($this->getApplication()->has('filament:cache-components')) {
+                    $this->call('filament:cache-components');
+                }
             });
         } else {
             $this->runStep('Cache: Rebuild (dev)', function () {
