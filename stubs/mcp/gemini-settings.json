@@ -1,0 +1,17 @@
+{
+    "mcpServers": {
+        "laravel-boost": {
+            "command": "php",
+            "args": [
+                "artisan",
+                "boost:mcp"
+            ]
+        },
+        "filament-examples": {
+            "url": "https://filamentexamples.com/mcp",
+            "headers": {
+                "Authorization": "Bearer YOUR_FILAMENT_EXAMPLES_TOKEN"
+            }
+        }
+    }
+}

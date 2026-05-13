@@ -1,0 +1,45 @@
+#!/bin/bash
+set -e
+echo "Starting Night Shift Run at $(date)..."
+export NVM_DIR="$HOME/.nvm"
+[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+
+if [ -f .env ]; then
+    export ANTHROPIC_API_KEY=$(grep '^ANTHROPIC_API_KEY=' .env | cut -d '=' -f2- | tr -d '"\r')
+fi
+if [ -z "$ANTHROPIC_API_KEY" ]; then exit 1; fi
+
+if [ -f .ralph-stuck ]; then rm .ralph-stuck; fi
+if [ -f .ralph-complete ]; then rm .ralph-complete; fi
+
+if [ -n "$(git status --porcelain)" ]; then exit 1; fi
+
+OPEN_ISSUES=$(gh issue list --state open --limit 1)
+if [ -z "$OPEN_ISSUES" ]; then exit 0; fi
+
+ITERATIONS=${1:-10}
+BRANCH="night-shift-$(date +%Y%m%d-%H%M%S)"
+export CLAUDE_CODE_TASK_LIST_ID="swm-night-shift-$(date +%Y%m%d)"
+
+git checkout main
+git pull origin main
+git checkout -b "$BRANCH"
+
+for ((i=1; i<=ITERATIONS; i++)); do
+    claude -p --dangerously-skip-permissions "$(cat <<'PROMPT'
+1. Fetch open issues using 'github_issues'. Filter out issues currently in_progress or completed in Tasks.
+2. If none remain, create `.ralph-complete` and exit.
+3. Pick one issue (prioritize bugs). Create an `in_progress` Task.
+4. INVESTIGATE app structure BEFORE editing files.
+5. Fix/Implement, write tests, format with `pint`, run tests.
+6. If stuck after 3 fails, mark Task `stuck`, create `.ralph-stuck` and exit.
+7. Commit (ISSUE #<num>: <desc>) and mark Task `completed`.
+PROMPT
+)"
+    if [ -f .ralph-stuck ]; then exit 1; fi
+    git push -u origin "$BRANCH"
+    if [ -f .ralph-complete ]; then
+        rm -f .ralph-complete
+        exit 0
+    fi
+done
