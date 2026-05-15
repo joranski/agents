@@ -1,6 +1,8 @@
 ---
 name: using-git-worktrees
 description: Use when starting feature work that needs isolation from current workspace, when an implementation plan's Worktree Strategy header recommends a worktree, or when running multiple in-flight branches in parallel. Creates isolated git worktrees with smart directory selection and safety verification. Skip for trivial single-file edits, hotfixes on the current branch, or when the plan explicitly says Skip.
+source: joranski/agents
+canonical: true
 ---
 
 # Using Git Worktrees

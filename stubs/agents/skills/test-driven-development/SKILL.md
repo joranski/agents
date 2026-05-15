@@ -1,6 +1,8 @@
 ---
 name: test-driven-development
 description: Use when implementing any feature or bugfix, before writing implementation code
+source: joranski/agents
+canonical: true
 ---
 
 # Test-Driven Development (TDD)

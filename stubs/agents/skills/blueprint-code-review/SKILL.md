@@ -1,6 +1,8 @@
 ---
 name: blueprint-code-review
 description: Use immediately after writing or modifying Filament components (Resources, Pages, Widgets), or whenever asked to review or audit Filament code to ensure adherence to Filament v5 Blueprint standards.
+source: joranski/agents
+canonical: true
 ---
 
 # Blueprint Code Review

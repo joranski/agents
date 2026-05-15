@@ -1,6 +1,8 @@
 ---
 name: package-extraction-scout
 description: "Use when finishing a feature, during refactor, when reviewing app/ for cleanup, when the same service is being copy-pasted across modules or repos, when a service feels mature and stable, or when explicitly asked whether something should become a Composer package. Identifies Laravel/PHP services that are strong candidates for extraction into a standalone composer require package and produces a structured extraction memo. Does not auto-extract; recommends only."
+source: joranski/agents
+canonical: true
 ---
 
 # Package Extraction Scout

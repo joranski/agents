@@ -1,6 +1,8 @@
 ---
 name: writing-skills
 description: Use when creating new skills, editing existing skills, or verifying skills work before deployment
+source: joranski/agents
+canonical: true
 ---
 
 # Writing Skills

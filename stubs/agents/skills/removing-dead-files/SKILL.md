@@ -1,6 +1,8 @@
 ---
 name: removing-dead-files
 description: Use when cleaning up a project, completing a major refactor, or when the workspace contains abandoned or unused files that need to be safely removed.
+source: joranski/agents
+canonical: true
 ---
 
 # Removing Dead Files

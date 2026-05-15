@@ -2,6 +2,9 @@
 name: fluxui-development
 description: "Use this skill for Flux UI development in Livewire applications only. Trigger when working with <flux:*> components, building or customizing Livewire component UIs, creating forms, modals, tables, or other interactive elements. Covers: flux: components (buttons, inputs, modals, forms, tables, date-pickers, kanban, badges, tooltips, etc.), component composition, Tailwind CSS styling, Heroicons/Lucide icon integration, validation patterns, responsive design, and theming. Do not use for non-Livewire frameworks or non-component styling."
 license: MIT
+source: laravel/skills
+canonical: false
+bundled_by: joranski/agents
 metadata:
   author: laravel
 ---

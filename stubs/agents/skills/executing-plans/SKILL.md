@@ -1,6 +1,8 @@
 ---
 name: executing-plans
 description: Use when you have a written implementation plan with multiple batches and want checkpoint-style execution with human review between batches (3-task default). Prefer single-flow-task-execution for plans with independent tasks needing per-task review gates.
+source: joranski/agents
+canonical: true
 ---
 
 # Executing Plans

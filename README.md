@@ -22,11 +22,12 @@ The installer will:
 
 1. **Prompt for credentials** — Filament Blueprint, Flux Pro, Anthropic API key (press Enter to skip any)
 2. **Configure Supervisor** — sets `SUPERVISOR_WORKER` in `.env` for the deploy pipeline
-3. **Publish 22 AI agent skills** → `.agents/skills/`
+3. **Publish 22 AI agent skills** → `.agents/skills/` (with collision-safe upgrades — see below)
 4. **Publish agent rules** → `.agents/rules/`
 5. **Install Night Shift** → `bin/night-shift` (autonomous issue solver)
 6. **Configure MCP** → `claude.json` + `.gemini/settings.json`
-7. **Update `.gitignore`** with agent runtime files
+7. **Track ownership** → `.agents/.manifest.json` (gitignored) records which files we installed
+8. **Update `.gitignore`** with agent runtime files
 
 ### Re-run setup anytime
 
@@ -72,13 +73,55 @@ php artisan git:push --skip-pint       # Skip code formatting
 
 ### `php artisan agents:install`
 
-Publish agent files into your project. Existing files are **never overwritten** unless `--force` is passed.
+Publish agent files into your project with **smart collision handling** — your local edits and skills owned by other Composer packages (e.g. `laravel/boost`) are preserved automatically.
 
 ```bash
-php artisan agents:install             # Install everything + credentials wizard
-php artisan agents:install --setup     # Re-run credentials wizard only
-php artisan agents:install --force     # Overwrite existing files
-php artisan agents:install --skills    # Only install/update skills
+php artisan agents:install               # Install/upgrade safely (defers conflicts)
+php artisan agents:install --setup       # Re-run credentials wizard only
+php artisan agents:install --skills      # Only install/update skills
+php artisan agents:install --force       # Also overwrite OUR skills you've edited locally
+php artisan agents:install --force-all   # DANGEROUS: overwrite EVERYTHING, including
+                                         # files owned by other packages
+```
+
+#### How collision handling works
+
+Each skill carries `source:` and `canonical:` fields in its YAML frontmatter so the installer can tell who authored which file. A `.agents/.manifest.json` (gitignored) records SHA256 of every file we publish so we can detect local edits.
+
+Decision matrix the installer applies to each file:
+
+| Existing state | Default action | `--force` | `--force-all` |
+|---|---|---|---|
+| File missing | **install** | install | install |
+| Identical to ours | **unchanged** | unchanged | unchanged |
+| Owned by another package (`source:` differs) | **defer** (their territory) | defer | overwrite |
+| Same source, but existing copy is `canonical: true` and ours is bundled (`canonical: false`) | **defer** (don't downgrade) | defer | overwrite |
+| Our prior install, untouched on disk | **update** (silent upgrade) | update | update |
+| Our prior install, locally edited | **preserve** (keep edits) | overwrite | overwrite |
+
+**The 5 Laravel-canonical skills we bundle** (`laravel-best-practices`, `pest-testing`, `fluxui-development`, `volt-development`, `tailwindcss-development`) are marked `canonical: false` — if you also install `laravel/boost` or any other Laravel-skills publisher, their canonical version wins automatically. We ship them as a fallback so you get them even without Boost.
+
+**Upgrading from v1.6.0 → v1.7.0:** Your existing skill files don't have the new frontmatter and there's no manifest yet, so on first install the installer will treat all 22 skills as "possibly hand-edited" and preserve them. Run once with `--force` to migrate:
+
+```bash
+composer update joranski/agents
+php artisan agents:install --skills --force
+```
+
+After that one-shot, future upgrades are silent (`--force` no longer needed unless you actually edit a skill locally).
+
+#### Install summary output
+
+```
+  install     5   new files written
+  update     14   upgraded from prior install
+  unchanged   2   already current
+  preserved   1   local edits kept (re-run with --force to overwrite)
+  deferred    5   existing canonical copy beats our bundled version
+
+  Notices:
+    • Preserved local edits in .agents/skills/brainstorming/SKILL.md (re-run with --force to overwrite)
+    • Deferred to existing owner (laravel/skills): .agents/skills/pest-testing/SKILL.md
 ```
 
 ## Environment Variables

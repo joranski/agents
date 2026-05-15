@@ -1,6 +1,8 @@
 ---
 name: git-push
 description: Use when the user says "push", "commit", "git push", "deploy to git", or wants to send their code to origin — runs preflight, generates commit message from diff, stages, commits, and pushes
+source: joranski/agents
+canonical: true
 ---
 
 # Git Push

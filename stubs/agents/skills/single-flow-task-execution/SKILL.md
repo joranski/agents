@@ -1,6 +1,8 @@
 ---
 name: single-flow-task-execution
 description: Use when executing implementation plans with mostly independent tasks and you want automated per-task two-stage review (spec compliance then code quality) without human checkpoints between tasks. Prefer executing-plans for batch checkpoints with mid-implementation human review.
+source: joranski/agents
+canonical: true
 ---
 
 # Single-Flow Task Execution

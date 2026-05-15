@@ -1,6 +1,8 @@
 ---
 name: using-superpowers
 description: Use when starting any conversation - establishes how to find and use skills, requiring skill loading via view_file before ANY response including clarifying questions
+source: joranski/agents
+canonical: true
 ---
 
 <EXTREMELY-IMPORTANT>
