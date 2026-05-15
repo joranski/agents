@@ -22,7 +22,7 @@ The installer will:
 
 1. **Prompt for credentials** — Filament Blueprint, Flux Pro, Anthropic API key (press Enter to skip any)
 2. **Configure Supervisor** — sets `SUPERVISOR_WORKER` in `.env` for the deploy pipeline
-3. **Publish 22 AI agent skills** → `.agents/skills/` (with collision-safe upgrades — see below)
+3. **Publish 25 AI agent skills** → `.agents/skills/` (with collision-safe upgrades — see below)
 4. **Publish agent rules** → `.agents/rules/`
 5. **Install Night Shift** → `bin/night-shift` (autonomous issue solver)
 6. **Configure MCP** → `claude.json` + `.gemini/settings.json`
@@ -99,13 +99,19 @@ Decision matrix the installer applies to each file:
 | Our prior install, untouched on disk | **update** (silent upgrade) | update | update |
 | Our prior install, locally edited | **preserve** (keep edits) | overwrite | overwrite |
 
-**The 5 Laravel-canonical skills we bundle** (`laravel-best-practices`, `pest-testing`, `fluxui-development`, `volt-development`, `tailwindcss-development`) are marked `canonical: false` — if you also install `laravel/boost` or any other Laravel-skills publisher, their canonical version wins automatically. We ship them as a fallback so you get them even without Boost.
+**Bundled-but-deferred skills** are marked `canonical: false` so the upstream canonical version wins automatically when present:
 
-**Upgrading from v1.6.0 → v1.7.0:** Your existing skill files don't have the new frontmatter and there's no manifest yet, so on first install the installer will treat all 22 skills as "possibly hand-edited" and preserve them. Run once with `--force` to migrate:
+- **5 Laravel-canonical** (`laravel-best-practices`, `pest-testing`, `fluxui-development`, `volt-development`, `tailwindcss-development`) — defer to `laravel/boost` or any other Laravel-skills publisher
+- **2 Anthropic-canonical** (`webapp-testing`, `mcp-builder`) — defer to `@anthropics/skills` if installed
+- **1 Sentry-canonical** (`agents-md`) — defers to Sentry's `@getsentry/skills` if installed
+
+We ship all of them as fallback so you get them even without their upstream publisher.
+
+**Upgrading from v1.7.x → v1.8.0:** v1.8.0 adds 3 new bundled skills (`agents-md`, `webapp-testing`, `mcp-builder`). They install fresh — no migration step needed. If you're coming from v1.6.0 (pre-frontmatter), the original migration step still applies:
 
 ```bash
 composer update joranski/agents
-php artisan agents:install --skills --force
+php artisan agents:install --skills --force   # one-time, only if upgrading from v1.6.0
 ```
 
 After that one-shot, future upgrades are silent (`--force` no longer needed unless you actually edit a skill locally).
@@ -153,30 +159,100 @@ Requires: `ANTHROPIC_API_KEY` in `.env`, `gh` CLI authenticated, clean git worki
 
 ## Skills Included
 
+### Process (planning & design)
 | Skill | Purpose |
 |-------|---------|
 | `brainstorming` | Design before code — explores intent, requirements, and recommends a worktree strategy |
 | `writing-plans` | Multi-step task planning with TDD steps, worktree strategy, and execution-mode hand-off |
 | `using-git-worktrees` | Isolated feature work — invoked only when the plan recommends it (advisory) |
+
+### Execution
+| Skill | Purpose |
+|-------|---------|
 | `executing-plans` | Plan execution with batch checkpoints for human review |
 | `single-flow-task-execution` | Plan execution with automated per-task two-stage review (default) |
 | `finishing-a-development-branch` | Branch completion workflow — merge / PR / keep / discard |
-| `using-superpowers` | Meta-skill: how to find and use skills |
-| `writing-skills` | Creating new skills with TDD |
+| `git-push` | Agent-generated commit messages from diff analysis + preflight |
+
+### Quality (review, debug, test)
+| Skill | Purpose |
+|-------|---------|
 | `verification-before-completion` | Evidence before claims — no shortcuts |
 | `systematic-debugging` | Root-cause analysis before proposing fixes |
 | `test-driven-development` | Red-green-refactor discipline |
 | `requesting-code-review` | Pre-merge structured review |
 | `receiving-code-review` | Technical rigor on feedback, no performative agreement |
 | `removing-dead-files` | Safe dead code removal (proof of death required) |
-| `package-extraction-scout` | Identify mature services that should become standalone Composer packages |
-| `git-push` | Agent-generated commit messages from diff analysis + preflight |
-| `laravel-best-practices` | Laravel PHP code patterns (DB, security, eloquent, queues, etc.) |
-| `pest-testing` | Pest PHP testing patterns, browser tests, datasets |
 | `blueprint-code-review` | Filament v5 Blueprint standards audit |
-| `fluxui-development` | Flux UI component development |
-| `volt-development` | Single-file Livewire Volt components |
-| `tailwindcss-development` | Tailwind CSS v4 utility patterns |
+
+### Architecture & meta
+| Skill | Purpose |
+|-------|---------|
+| `using-superpowers` | Meta-skill: how to find and use skills |
+| `writing-skills` | Creating new skills with TDD |
+| `agents-md` | Generate and maintain `AGENTS.md` files (bundled, defers to `getsentry/skills`) |
+| `package-extraction-scout` | Identify mature services that should become standalone Composer packages |
+| `mcp-builder` | Build Model Context Protocol servers (bundled, defers to `anthropics/skills`) |
+| `webapp-testing` | Test web apps with Playwright at the agent level (bundled, defers to `anthropics/skills`) |
+
+### Domain (Laravel)
+| Skill | Purpose |
+|-------|---------|
+| `laravel-best-practices` | Laravel PHP code patterns (DB, security, eloquent, queues, etc.) — bundled, defers to `laravel/skills` |
+| `pest-testing` | Pest PHP testing patterns, browser tests, datasets — bundled, defers to `laravel/skills` |
+| `fluxui-development` | Flux UI component development — bundled, defers to `laravel/skills` |
+| `volt-development` | Single-file Livewire Volt components — bundled, defers to `laravel/skills` |
+| `tailwindcss-development` | Tailwind CSS v4 utility patterns — bundled, defers to `laravel/skills` |
+
+See [CREDITS.md](CREDITS.md) for upstream attribution on bundled skills.
+
+## Security & Operational Warnings
+
+This package ships with several pieces that touch system-level concerns. Read this section before installing in production or shared environments.
+
+### Night Shift uses reduced sandboxing
+
+`stubs/bin/night-shift` invokes Claude Code with `--dangerously-skip-permissions`, which bypasses Claude Code's per-tool permission prompts. It also auto-pushes branches to your `origin` after each iteration.
+
+**Run only when:**
+- The repository is yours and you control its `origin` remote
+- The host is dedicated (not a shared dev machine or CI runner with broader access)
+- Your `ANTHROPIC_API_KEY` has a budget cap configured at console.anthropic.com
+- You have monitoring on the resulting branches before any merge
+
+If any of those isn't true, don't enable Night Shift via cron. Run it manually and inspect each branch.
+
+### `git:pull` requires passwordless `sudo` and assumes Linux + nginx
+
+The `git:pull` deploy pipeline runs:
+
+```bash
+sudo chown -R $USER:nginx storage/ bootstrap/cache/
+sudo chmod -R 775 storage/ bootstrap/cache/
+sudo supervisorctl restart <worker>:*
+sudo systemctl reload php-fpm
+```
+
+**This will not work on:** macOS dev machines, FreeBSD, Windows, hosts without `nginx` group, hosts without supervisor, or any environment without passwordless sudo for the deploy user. It is a **Linux + nginx + php-fpm + supervisor** production-server tool.
+
+For local dev: use `php artisan migrate`, `composer install`, etc. directly. `git:pull` is for `/var/www/...` style deploys.
+
+### Credentials land in `auth.json` and `.env`
+
+`agents:install` writes:
+- **Filament Blueprint token** → `auth.json` (via `composer config --auth`)
+- **Flux Pro token** → `auth.json` (via `composer config --auth`)
+- **Anthropic API key** → `.env` as `ANTHROPIC_API_KEY=...`
+
+`auth.json` should be in your `.gitignore` (Composer's default behavior, but verify). `.env` is already gitignored by every Laravel template. **Never commit either.**
+
+### MCP configs include placeholder tokens
+
+`stubs/mcp/gemini-settings.json` includes a `Bearer YOUR_FILAMENT_EXAMPLES_TOKEN` placeholder for the Filament Examples MCP server. Replace with your real token only locally — the file is published to your project, not your repo's tracked location, but be aware the placeholder is published as-is.
+
+### Skills you bundle execute on your machine
+
+When you `agents:install`, 25 skill files are written to `.agents/skills/` and become readable by any AI agent you point at the project. Skills cannot execute code on their own, but they can instruct an agent to run shell commands. Only install this package in projects you trust to run agent-generated code.
 
 ## Migrating from local commands
 
@@ -198,4 +274,8 @@ php artisan git:pull --help
 
 ## License
 
-MIT
+MIT — see [LICENSE](LICENSE).
+
+## Credits
+
+Built on top of [Superpowers](https://github.com/jessesquires/superpowers) (workflow skills), [Laravel](https://laravel.com) (Laravel-canonical skills), [Anthropic](https://officialskills.sh/anthropics) (`webapp-testing`, `mcp-builder`), and [Sentry](https://officialskills.sh/getsentry) (`agents-md`). See [CREDITS.md](CREDITS.md) for full attribution.

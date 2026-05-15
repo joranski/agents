@@ -19,7 +19,7 @@ class AgentsInstall extends Command
 
     private const PACKAGE_NAME = 'joranski/agents';
 
-    private const PACKAGE_VERSION = '1.7.0';
+    private const PACKAGE_VERSION = '1.8.0';
 
     private const MANIFEST_RELATIVE_PATH = '.agents/.manifest.json';
 
@@ -391,7 +391,7 @@ class AgentsInstall extends Command
 
         $this->newLine();
         $this->components->bulletList([
-            'Skills: .agents/skills/ (22 AI agent skills, '.self::PACKAGE_VERSION.')',
+            'Skills: .agents/skills/ (25 AI agent skills, '.self::PACKAGE_VERSION.')',
             'Manifest: .agents/.manifest.json (tracks ownership for safe upgrades)',
             'Commands: php artisan git:pull, git:push',
             'Re-run setup: php artisan agents:install --setup',

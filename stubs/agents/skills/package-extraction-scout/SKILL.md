@@ -176,13 +176,13 @@ Append (or create) `docs/extraction-candidates.md`:
 
 - `dompdf/dompdf` is dragged into the main app's `composer.json` solely for this class
 - Public API hasn't moved in 2 months — library-level maturity
-- Sibling project `joranski/billing-portal` reimplemented the same renderer
+- Sibling project `acme/billing-portal` reimplemented the same renderer
 
 ### Suggested package
 
-- **Name:** `joranski/invoice-pdf`
+- **Name:** `acme/invoice-pdf`
 - **Dependencies to move:** `dompdf/dompdf: ^3.0`
-- **ServiceProvider:** `Joranski\InvoicePdf\InvoicePdfServiceProvider`
+- **ServiceProvider:** `Acme\InvoicePdf\InvoicePdfServiceProvider`
 - **Public API:** `InvoicePdfRenderer::render(Invoice $invoice): string`
 - **Bind via:** interface `InvoiceRenderer` so the host app stays decoupled
 
@@ -220,11 +220,11 @@ No code was extracted, moved, or refactored.
 
 If a candidate is approved for extraction, the actual move is its own implementation plan. High-level shape:
 
-1. Create new Composer package repo (`joranski/<name>`)
+1. Create new Composer package repo (`<vendor>/<name>`)
 2. Move class, tests, dependencies into the package
 3. Add `ServiceProvider` for Laravel auto-discovery
 4. Publish via VCS or private Packagist/Satis
-5. In host app: `composer require joranski/<name>` and remove the in-tree copy
+5. In host app: `composer require <vendor>/<name>` and remove the in-tree copy
 6. Lock host app to specific package version
 
 This is NOT this skill's job. This skill stops at the memo.
