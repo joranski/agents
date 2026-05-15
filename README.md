@@ -22,7 +22,7 @@ The installer will:
 
 1. **Prompt for credentials** — Filament Blueprint, Flux Pro, Anthropic API key (press Enter to skip any)
 2. **Configure Supervisor** — sets `SUPERVISOR_WORKER` in `.env` for the deploy pipeline
-3. **Publish 21 AI agent skills** → `.agents/skills/`
+3. **Publish 22 AI agent skills** → `.agents/skills/`
 4. **Publish agent rules** → `.agents/rules/`
 5. **Install Night Shift** → `bin/night-shift` (autonomous issue solver)
 6. **Configure MCP** → `claude.json` + `.gemini/settings.json`
@@ -112,27 +112,28 @@ Requires: `ANTHROPIC_API_KEY` in `.env`, `gh` CLI authenticated, clean git worki
 
 | Skill | Purpose |
 |-------|---------|
-| `brainstorming` | Design before code — explores intent and requirements |
-| `git-push` | Agent-generated commit messages from diff analysis |
+| `brainstorming` | Design before code — explores intent, requirements, and recommends a worktree strategy |
+| `writing-plans` | Multi-step task planning with TDD steps, worktree strategy, and execution-mode hand-off |
+| `using-git-worktrees` | Isolated feature work — invoked only when the plan recommends it (advisory) |
+| `executing-plans` | Plan execution with batch checkpoints for human review |
+| `single-flow-task-execution` | Plan execution with automated per-task two-stage review (default) |
+| `finishing-a-development-branch` | Branch completion workflow — merge / PR / keep / discard |
+| `using-superpowers` | Meta-skill: how to find and use skills |
+| `writing-skills` | Creating new skills with TDD |
 | `verification-before-completion` | Evidence before claims — no shortcuts |
 | `systematic-debugging` | Root-cause analysis before proposing fixes |
-| `pest-testing` | Pest PHP testing patterns and workflows |
 | `test-driven-development` | Red-green-refactor discipline |
-| `writing-plans` | Multi-step task planning before touching code |
+| `requesting-code-review` | Pre-merge structured review |
+| `receiving-code-review` | Technical rigor on feedback, no performative agreement |
+| `removing-dead-files` | Safe dead code removal (proof of death required) |
+| `package-extraction-scout` | Identify mature services that should become standalone Composer packages |
+| `git-push` | Agent-generated commit messages from diff analysis + preflight |
+| `laravel-best-practices` | Laravel PHP code patterns (DB, security, eloquent, queues, etc.) |
+| `pest-testing` | Pest PHP testing patterns, browser tests, datasets |
 | `blueprint-code-review` | Filament v5 Blueprint standards audit |
 | `fluxui-development` | Flux UI component development |
 | `volt-development` | Single-file Livewire Volt components |
-| `tailwindcss-development` | Tailwind CSS utility patterns |
-| `laravel-best-practices` | Laravel PHP code patterns |
-| `using-superpowers` | Meta-skill: how to find and use skills |
-| `single-flow-task-execution` | Structured task-by-task development |
-| `executing-plans` | Implementation plan execution |
-| `writing-skills` | Creating new skills with TDD |
-| `finishing-a-development-branch` | Branch completion workflow |
-| `requesting-code-review` | Pre-merge verification |
-| `receiving-code-review` | Technical rigor on feedback |
-| `removing-dead-files` | Safe dead code removal |
-| `using-git-worktrees` | Isolated feature work |
+| `tailwindcss-development` | Tailwind CSS v4 utility patterns |
 
 ## Migrating from local commands
 

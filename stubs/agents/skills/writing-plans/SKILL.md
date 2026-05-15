@@ -13,9 +13,18 @@ Assume they are a skilled developer, but know almost nothing about our toolset o
 
 **Announce at start:** "I'm using the writing-plans skill to create the implementation plan."
 
-**Context:** This should be run in a dedicated worktree (created by brainstorming skill).
-
 **Save plans to:** `docs/plans/YYYY-MM-DD-<feature-name>.md`
+
+## Inputs from brainstorming
+
+If `brainstorming` ran first, copy these forward into the plan header:
+
+- Goal & architecture summary from the design doc
+- **Worktree Strategy block** (Required / Strongly recommend / Skip) and reason
+- Suggested branch name (if any)
+- Link back to the design doc
+
+If brainstorming did NOT run, decide the Worktree Strategy yourself using the same heuristics from `.agents/skills/brainstorming/SKILL.md` (Worktree Strategy table). Default for a multi-task plan: **Strongly recommend**.
 
 ## Bite-Sized Task Granularity
 
@@ -33,13 +42,26 @@ Assume they are a skilled developer, but know almost nothing about our toolset o
 ```markdown
 # [Feature Name] Implementation Plan
 
-> **For Antigravity:** REQUIRED WORKFLOW: Use `.agent/workflows/execute-plan.md` to execute this plan in single-flow mode.
-
 **Goal:** [One sentence describing what this builds]
 
 **Architecture:** [2-3 sentences about approach]
 
 **Tech Stack:** [Key technologies/libraries]
+
+**Design doc:** `docs/plans/YYYY-MM-DD-<topic>-design.md` (if brainstorming ran)
+
+## Worktree Strategy
+
+**Recommendation:** <Required | Strongly recommend | Skip>
+**Reason:** <one-line tied to a brainstorming heuristic>
+**Suggested branch name:** `<feature/short-name>` (omit if Skip)
+
+> Executors: if Required or Strongly recommend, invoke `.agents/skills/using-git-worktrees/SKILL.md` before Task 1. If Skip, work in the current branch and skip the worktree skill entirely.
+
+## Execution Mode
+
+**Recommended:** <single-flow-task-execution | executing-plans>
+**Reason:** <why — see decision matrices in those skills>
 
 ---
 ```
@@ -87,22 +109,34 @@ git commit -m "feat: add specific feature"
 ```
 ````
 
+## Choosing the Execution Mode
+
+In the plan header's "Execution Mode" line, pick one:
+
+- **`single-flow-task-execution`** (default) — tasks are mostly independent, want automated per-task two-stage review (spec then quality), no human checkpoints between tasks
+- **`executing-plans`** — tasks are tightly related, want human review every ~3-task batch, plan is large (>10 tasks)
+
+See the decision matrices at the top of `.agents/skills/single-flow-task-execution/SKILL.md` and `.agents/skills/executing-plans/SKILL.md`.
+
 ## Remember
 - Exact file paths always
 - Complete code in plan (not "add validation")
 - Exact commands with expected output
-- Reference relevant skills with @ syntax
+- Reference relevant skills with `.agents/skills/<name>/SKILL.md` paths (no `@` — that force-loads)
 - DRY, YAGNI, TDD, frequent commits
 
 ## Execution Handoff
 
-After saving the plan, use a single execution path:
+After saving the plan, hand off in this exact form:
 
-**"Plan complete and saved to `docs/plans/<filename>.md`.**
-**Next step: run `.agent/workflows/execute-plan.md` to execute this plan task-by-task in single-flow mode."**
+> **Plan complete and saved to `docs/plans/<filename>.md`.**
+>
+> **Worktree Strategy:** `<Required | Strongly recommend | Skip>` — `<reason>`
+>
+> **Next step:** invoke `.agents/skills/<single-flow-task-execution|executing-plans>/SKILL.md` to execute. If Worktree Strategy is Required/Strongly recommend, that skill will invoke `.agents/skills/using-git-worktrees/SKILL.md` first.
 
-Execution requirements:
-- **Entry workflow:** `.agent/workflows/execute-plan.md`
-- **Execution skill:** `.agent/skills/executing-plans/SKILL.md`
-- **Enforced execution model:** `.agent/skills/single-flow-task-execution/SKILL.md`
-- **Tracking:** update `<project-root>/docs/plans/task.md` (table-only tracker)
+Tracking:
+
+- **Tracker file:** update `<project-root>/docs/plans/task.md` (table-only)
+- **Per-task discipline:** `.agents/skills/test-driven-development/SKILL.md`
+- **Final completion:** `.agents/skills/finishing-a-development-branch/SKILL.md`

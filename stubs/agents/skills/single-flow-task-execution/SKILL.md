@@ -1,6 +1,6 @@
 ---
 name: single-flow-task-execution
-description: Use when executing implementation plans, handling multiple independent tasks, or doing structured task-by-task development with review gates in Antigravity.
+description: Use when executing implementation plans with mostly independent tasks and you want automated per-task two-stage review (spec compliance then code quality) without human checkpoints between tasks. Prefer executing-plans for batch checkpoints with mid-implementation human review.
 ---
 
 # Single-Flow Task Execution
@@ -9,18 +9,30 @@ Execute plans by working through one task at a time with two-stage review after 
 
 **Core principle:** One task at a time + two-stage review (spec then quality) = high quality, disciplined iteration.
 
-## Antigravity Execution Model
+## When to Use This vs executing-plans
 
-Antigravity does NOT support parallel coding subagents. All work happens in a single execution thread.
+| Situation | Use this (`single-flow-task-execution`) | Use `executing-plans` |
+|---|---|---|
+| Tasks fully independent, want automated per-task review gates | ✓ | |
+| Tasks tightly related, want human checkpoint every ~3 tasks | | ✓ |
+| Long uninterrupted run preferred | ✓ | |
+| Architect wants to review direction mid-implementation | | ✓ |
+| Plan has < 3 tasks total | ✓ | |
+| Plan has > 10 tasks and human attention is the bottleneck | | ✓ |
+| Two-stage spec + quality review needed per task | ✓ | |
+
+If unsure, default to this skill.
+
+## Execution Model
+
+All work happens in a single sequential execution thread. Do not dispatch parallel coding subagents even if the runtime supports them — sequencing keeps changes auditable.
 
 **Rules:**
 
 1. **One active task only** — never work on multiple tasks simultaneously.
 2. **One execution thread only** — no parallel dispatch.
-3. **No parallel coding subagents** — Antigravity does not have `Task(...)`.
-4. **Browser automation** may use `browser_subagent` in isolated steps.
-5. **Track progress** by updating `<project-root>/docs/plans/task.md` at each state change (table-only tracker).
-6. **Use `task_boundary`** to clearly delineate each unit of work.
+3. **Track progress** by updating `<project-root>/docs/plans/task.md` at each state change (table-only tracker).
+4. **Honor the plan's Worktree Strategy header** — if the plan recommends a worktree, invoke `.agents/skills/using-git-worktrees/SKILL.md` before any code changes.
 
 ## When to Use
 
@@ -56,10 +68,10 @@ digraph when_to_use {
 - Tasks are tightly coupled and need full system understanding
 - Single simple task that doesn't need review structure
 
-**vs. Executing Plans (worktree-based):**
+**vs. `executing-plans`:**
 
-- Same session (no context switch)
-- Fresh `task_boundary` per task (clean scope)
+- Same session (no context switch between tasks)
+- Fresh scope per task (clean context)
 - Two-stage review after each task: spec compliance first, then code quality
 - Faster iteration (no human-in-loop between tasks)
 
@@ -147,29 +159,28 @@ After all tasks:
 
 ## Task Brief Structure
 
-For each task, prepare:
+For each task, prepare a self-contained brief in this shape:
 
 ```
-task_boundary:
-  description: "Implement Task N: [task name]"
-  prompt: |
-    ## Task Description
-    [FULL TEXT of task from plan — paste it here]
+description: "Implement Task N: [task name]"
+prompt: |
+  ## Task Description
+  [FULL TEXT of task from plan — paste it here]
 
-    ## Context
-    [Where this fits, dependencies, architectural context]
+  ## Context
+  [Where this fits, dependencies, architectural context]
 
-    ## Constraints
-    - Only modify [specific files/directories]
-    - Follow existing patterns in the codebase
-    - Write tests for new functionality
+  ## Constraints
+  - Only modify [specific files/directories]
+  - Follow existing patterns in the codebase
+  - Write tests for new functionality
 
-    ## Verification
-    - Run: [specific test command]
-    - Expected: [what success looks like]
+  ## Verification
+  - Run: [specific test command]
+  - Expected: [what success looks like]
 ```
 
-**Key:** Provide full task text and context upfront. Don't make the task boundary re-read the plan file.
+**Key:** Provide full task text and context upfront. Don't make the implementer re-read the plan file.
 
 ## Review Templates
 

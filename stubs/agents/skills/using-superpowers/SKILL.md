@@ -13,9 +13,9 @@ This is not negotiable. This is not optional. You cannot rationalize your way ou
 
 ## How to Access Skills
 
-**In Antigravity:** Use `view_file` to load a skill from `.agent/skills/<skill-name>/SKILL.md` (or `~/.gemini/skills/<skill-name>/SKILL.md` when needed). When you load a skill, follow it directly.
+Skills installed by this package live at `.agents/skills/<skill-name>/SKILL.md` in the project root. Load them with whatever file-read tool your runtime exposes (`Read`, `view_file`, `cat`, etc.) and follow the contents directly.
 
-**In other environments:** Check your platform's documentation for how skills are loaded.
+Some runtimes also support a global skill location (e.g. `~/.gemini/skills/<skill-name>/SKILL.md` for Gemini, `~/.claude/skills/...` for Claude Code). Project-local always wins on naming collisions.
 
 # Using Skills
 
@@ -26,26 +26,27 @@ This is not negotiable. This is not optional. You cannot rationalize your way ou
 ```dot
 digraph skill_flow {
     "User message received" [shape=doublecircle];
-    "About to EnterPlanMode?" [shape=doublecircle];
+    "About to enter plan/design mode?" [shape=diamond];
     "Already brainstormed?" [shape=diamond];
     "Invoke brainstorming skill" [shape=box];
     "Might any skill apply?" [shape=diamond];
-    "Load skill via view_file" [shape=box];
+    "Load skill (Read/view_file)" [shape=box];
     "Announce: 'Using [skill] to [purpose]'" [shape=box];
     "Has checklist?" [shape=diamond];
     "Update project-root docs/plans/task.md per checklist item" [shape=box];
     "Follow skill exactly" [shape=box];
     "Respond (including clarifications)" [shape=doublecircle];
 
-    "About to EnterPlanMode?" -> "Already brainstormed?";
+    "User message received" -> "About to enter plan/design mode?";
+    "About to enter plan/design mode?" -> "Already brainstormed?" [label="yes"];
+    "About to enter plan/design mode?" -> "Might any skill apply?" [label="no"];
     "Already brainstormed?" -> "Invoke brainstorming skill" [label="no"];
     "Already brainstormed?" -> "Might any skill apply?" [label="yes"];
     "Invoke brainstorming skill" -> "Might any skill apply?";
 
-    "User message received" -> "Might any skill apply?";
-    "Might any skill apply?" -> "Load skill via view_file" [label="yes, even 1%"];
+    "Might any skill apply?" -> "Load skill (Read/view_file)" [label="yes, even 1%"];
     "Might any skill apply?" -> "Respond (including clarifications)" [label="definitely not"];
-    "Load skill via view_file" -> "Announce: 'Using [skill] to [purpose]'";
+    "Load skill (Read/view_file)" -> "Announce: 'Using [skill] to [purpose]'";
     "Announce: 'Using [skill] to [purpose]'" -> "Has checklist?";
     "Has checklist?" -> "Update project-root docs/plans/task.md per checklist item" [label="yes"];
     "Has checklist?" -> "Follow skill exactly" [label="no"];
@@ -78,11 +79,12 @@ These thoughts mean STOP—you're rationalizing:
 
 When multiple skills could apply, use this order:
 
-1. **Process skills first** (brainstorming, debugging) - these determine HOW to approach the task
-2. **Implementation skills second** (frontend-design, mcp-builder) - these guide execution
+1. **Process skills first** (`brainstorming`, `systematic-debugging`, `writing-plans`) - these determine HOW to approach the task
+2. **Implementation skills second** (`fluxui-development`, `volt-development`, `tailwindcss-development`, `laravel-best-practices`, `pest-testing`, `blueprint-code-review`) - these guide execution
+3. **Closeout skills last** (`verification-before-completion`, `requesting-code-review`, `finishing-a-development-branch`, `git-push`)
 
-"Let's build X" → brainstorming first, then implementation skills.
-"Fix this bug" → debugging first, then domain-specific skills.
+"Let's build X" → `brainstorming` first, then `writing-plans`, then implementation skills.
+"Fix this bug" → `systematic-debugging` first, then domain-specific skills, then `verification-before-completion`.
 
 ## Skill Types
 

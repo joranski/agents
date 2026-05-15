@@ -1,6 +1,6 @@
 ---
 name: using-git-worktrees
-description: Use when starting feature work that needs isolation from current workspace or before executing implementation plans - creates isolated git worktrees with smart directory selection and safety verification
+description: Use when starting feature work that needs isolation from current workspace, when an implementation plan's Worktree Strategy header recommends a worktree, or when running multiple in-flight branches in parallel. Creates isolated git worktrees with smart directory selection and safety verification. Skip for trivial single-file edits, hotfixes on the current branch, or when the plan explicitly says Skip.
 ---
 
 # Using Git Worktrees
@@ -12,6 +12,19 @@ Git worktrees create isolated workspaces sharing the same repository, allowing w
 **Core principle:** Systematic directory selection + safety verification = reliable isolation.
 
 **Announce at start:** "I'm using the using-git-worktrees skill to set up an isolated workspace."
+
+## Honor the Plan's Worktree Strategy
+
+If you're being invoked from a plan execution flow, the plan header should contain a `## Worktree Strategy` block (set by `brainstorming` and propagated by `writing-plans`). Treat it as authoritative:
+
+| Plan says | Action |
+|---|---|
+| **Required** | Create worktree per the steps below — non-negotiable |
+| **Strongly recommend** | Create worktree unless the user explicitly opts out |
+| **Skip** | Do NOT create a worktree. Exit this skill and continue work on the current branch. |
+| (no header) | Apply heuristics from `.agents/skills/brainstorming/SKILL.md`. Default for multi-task plans: create worktree. |
+
+Use the suggested branch name from the plan header if present.
 
 ## Directory Selection Process
 
@@ -30,7 +43,7 @@ ls -d worktrees 2>/dev/null      # Alternative
 ### 2. Check AGENTS.md
 
 ```bash
-grep -i "worktree.*director" .agent/AGENTS.md 2>/dev/null
+grep -i "worktree.*director" AGENTS.md .agents/AGENTS.md 2>/dev/null
 ```
 
 **If preference specified:** Use it without asking.
@@ -149,7 +162,7 @@ Ready to implement <feature-name>
 | `.worktrees/` exists       | Use it (verify ignored)             |
 | `worktrees/` exists        | Use it (verify ignored)             |
 | Both exist                 | Use `.worktrees/`                   |
-| Neither exists             | Check `.agent/AGENTS.md` → Ask user |
+| Neither exists             | Check `AGENTS.md` → Ask user        |
 | Directory not ignored      | Add to .gitignore + commit          |
 | Tests fail during baseline | Report failures + ask               |
 | No package.json/Cargo.toml | Skip dependency install             |
@@ -164,7 +177,7 @@ Ready to implement <feature-name>
 ### Assuming directory location
 
 - **Problem:** Creates inconsistency, violates project conventions
-- **Fix:** Follow priority: existing > `.agent/AGENTS.md` > ask
+- **Fix:** Follow priority: existing > `AGENTS.md` > ask
 
 ### Proceeding with failing tests
 
@@ -200,24 +213,29 @@ Ready to implement auth feature
 - Skip baseline test verification
 - Proceed with failing tests without asking
 - Assume directory location when ambiguous
-- Skip `.agent/AGENTS.md` check
+- Skip `AGENTS.md` check
 
 **Always:**
 
-- Follow directory priority: existing > `.agent/AGENTS.md` > ask
+- Follow directory priority: existing > `AGENTS.md` > ask
 - Verify directory is ignored for project-local
 - Auto-detect and run project setup
 - Verify clean test baseline
 
 ## Integration
 
-**Called by:**
+**Called by (advisory, gated by plan header):**
 
-- **brainstorming** (Phase 4) - REQUIRED when design is approved and implementation follows
-- **single-flow-task-execution** - REQUIRED before executing any tasks
-- **executing-plans** - REQUIRED before executing any tasks
-- Any skill needing isolated workspace
+- **`single-flow-task-execution`** — invoked before Task 1 if the plan's Worktree Strategy is Required or Strongly recommend
+- **`executing-plans`** — invoked before the first batch if the plan's Worktree Strategy is Required or Strongly recommend
+- Any skill or session needing isolated workspace
+
+**Skipped when:**
+
+- Plan's Worktree Strategy is `Skip`
+- User explicitly overrides
+- Hotfix or single-file edit on current branch
 
 **Pairs with:**
 
-- **finishing-a-development-branch** - REQUIRED for cleanup after work complete
+- **`finishing-a-development-branch`** — REQUIRED for cleanup after worktree-based work completes

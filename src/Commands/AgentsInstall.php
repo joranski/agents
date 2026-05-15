@@ -94,7 +94,7 @@ class AgentsInstall extends Command
         $this->components->info("Installed: {$this->installed} | Skipped: {$this->skipped} (use --force to overwrite)");
         $this->newLine();
         $this->components->bulletList([
-            'Skills: .agents/skills/ (21 AI agent skills)',
+            'Skills: .agents/skills/ (22 AI agent skills)',
             'Commands: php artisan git:pull, git:push',
             'Night Shift: bin/night-shift (autonomous issue solver)',
             'MCP: claude.json, .gemini/settings.json',

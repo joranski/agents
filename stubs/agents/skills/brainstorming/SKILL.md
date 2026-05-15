@@ -27,8 +27,9 @@ You MUST create a task for each of these items and complete them in order:
 2. **Ask clarifying questions** — one at a time, understand purpose/constraints/success criteria
 3. **Propose 2-3 approaches** — with trade-offs and your recommendation
 4. **Present design** — in sections scaled to their complexity, get user approval after each section
-5. **Write design doc** — save to `docs/plans/YYYY-MM-DD-<topic>-design.md` and commit
-6. **Transition to implementation** — invoke writing-plans skill to create implementation plan
+5. **Decide Worktree Strategy** — apply heuristics below, record recommendation (advisory)
+6. **Write design doc** — save to `docs/plans/YYYY-MM-DD-<topic>-design.md` and commit
+7. **Transition to implementation** — invoke writing-plans skill to create implementation plan
 
 ## Process Flow
 
@@ -39,6 +40,7 @@ digraph brainstorming {
     "Propose 2-3 approaches" [shape=box];
     "Present design sections" [shape=box];
     "User approves design?" [shape=diamond];
+    "Decide Worktree Strategy" [shape=box];
     "Write design doc" [shape=box];
     "Invoke writing-plans skill" [shape=doublecircle];
 
@@ -47,12 +49,13 @@ digraph brainstorming {
     "Propose 2-3 approaches" -> "Present design sections";
     "Present design sections" -> "User approves design?";
     "User approves design?" -> "Present design sections" [label="no, revise"];
-    "User approves design?" -> "Write design doc" [label="yes"];
+    "User approves design?" -> "Decide Worktree Strategy" [label="yes"];
+    "Decide Worktree Strategy" -> "Write design doc";
     "Write design doc" -> "Invoke writing-plans skill";
 }
 ```
 
-**The terminal state is invoking writing-plans.** Do NOT invoke frontend-design, mcp-builder, or any other implementation skill. The ONLY skill you invoke after brainstorming is writing-plans.
+**The terminal state is invoking writing-plans.** Do NOT invoke any implementation skill (e.g. `fluxui-development`, `volt-development`, `pest-testing`, `laravel-best-practices`) directly from brainstorming. The ONLY skill you invoke after brainstorming is `writing-plans`. Implementation skills get pulled in by the plan itself.
 
 ## The Process
 
@@ -75,16 +78,47 @@ digraph brainstorming {
 - Cover: architecture, components, data flow, error handling, testing
 - Be ready to go back and clarify if something doesn't make sense
 
+## Worktree Strategy (Advisory)
+
+After the design is approved and before writing the design doc, evaluate whether the implementation should run in an isolated git worktree. **This is an advisory recommendation** — the user/agent can always override at execution time.
+
+Score the design against these signals and pick the strongest applicable recommendation:
+
+| Signal | Recommendation |
+|---|---|
+| Touches > ~5 files OR multiple subsystems | **Strongly recommend worktree** |
+| Will run in parallel with other in-flight feature work | **Required worktree** |
+| Risky / experimental / might be discarded | **Required worktree** (cheap discard via `git worktree remove`) |
+| Long-running (multi-day) feature | **Required worktree** |
+| Cross-cutting refactor | **Strongly recommend worktree** |
+| New isolated module / package extraction | **Strongly recommend worktree** |
+| Single small file edit, < 30 min | **Skip worktree** |
+| Hotfix on the current branch | **Skip worktree** |
+| Trivial config or doc change | **Skip worktree** |
+| Time-sensitive fix where context-switch cost > isolation benefit | **Skip worktree, note in plan** |
+
+**Output format** (record this in the design doc and the plan header):
+
+```markdown
+## Worktree Strategy
+
+**Recommendation:** <Required | Strongly recommend | Skip>
+**Reason:** <one-line explanation tied to a signal above>
+**Suggested branch name:** `<feature/short-name>` (only if recommending)
+```
+
+If the recommendation is "Required" or "Strongly recommend", `writing-plans` will surface this in the plan header so the executor knows to invoke `using-git-worktrees` before starting Task 1.
+
 ## After the Design
 
 **Documentation:**
-- Write the validated design to `docs/plans/YYYY-MM-DD-<topic>-design.md`
-- Use elements-of-style:writing-clearly-and-concisely skill if available
-- Commit the design document to git
+- Write the validated design (including the Worktree Strategy block) to `docs/plans/YYYY-MM-DD-<topic>-design.md`
+- Commit the design document to git (on the *current* branch — worktree creation, if any, happens later)
 
 **Implementation:**
-- Invoke the writing-plans skill to create a detailed implementation plan
-- Do NOT invoke any other skill. writing-plans is the next step.
+- Invoke the `writing-plans` skill to create a detailed implementation plan
+- Pass forward: design doc path, worktree recommendation, suggested branch name
+- Do NOT invoke any other skill. `writing-plans` is the next step.
 
 ## Key Principles
 
@@ -94,3 +128,4 @@ digraph brainstorming {
 - **Explore alternatives** - Always propose 2-3 approaches before settling
 - **Incremental validation** - Present design, get approval before moving on
 - **Be flexible** - Go back and clarify when something doesn't make sense
+- **Worktree decision is advisory** - Make a recommendation; the plan execution honors it but the user can override
