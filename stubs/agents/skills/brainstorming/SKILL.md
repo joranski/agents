@@ -29,9 +29,10 @@ You MUST create a task for each of these items and complete them in order:
 2. **Ask clarifying questions** — one at a time, understand purpose/constraints/success criteria
 3. **Propose 2-3 approaches** — with trade-offs and your recommendation
 4. **Present design** — in sections scaled to their complexity, get user approval after each section
-5. **Decide Worktree Strategy** — apply heuristics below, record recommendation (advisory)
-6. **Write design doc** — save to `docs/plans/YYYY-MM-DD-<topic>-design.md` and commit
-7. **Transition to implementation** — invoke writing-plans skill to create implementation plan
+5. **Decide Architecture Strategy** — does this feature qualify for `harden-logic` (ROP + Spec + FSM)? See heuristics below
+6. **Decide Worktree Strategy** — apply heuristics below, record recommendation (advisory)
+7. **Write design doc** — save to `docs/plans/YYYY-MM-DD-<topic>-design.md` and commit
+8. **Transition to implementation** — invoke writing-plans skill to create implementation plan
 
 ## Process Flow
 
@@ -42,6 +43,7 @@ digraph brainstorming {
     "Propose 2-3 approaches" [shape=box];
     "Present design sections" [shape=box];
     "User approves design?" [shape=diamond];
+    "Decide Architecture Strategy" [shape=box];
     "Decide Worktree Strategy" [shape=box];
     "Write design doc" [shape=box];
     "Invoke writing-plans skill" [shape=doublecircle];
@@ -51,7 +53,8 @@ digraph brainstorming {
     "Propose 2-3 approaches" -> "Present design sections";
     "Present design sections" -> "User approves design?";
     "User approves design?" -> "Present design sections" [label="no, revise"];
-    "User approves design?" -> "Decide Worktree Strategy" [label="yes"];
+    "User approves design?" -> "Decide Architecture Strategy" [label="yes"];
+    "Decide Architecture Strategy" -> "Decide Worktree Strategy";
     "Decide Worktree Strategy" -> "Write design doc";
     "Write design doc" -> "Invoke writing-plans skill";
 }
@@ -80,9 +83,40 @@ digraph brainstorming {
 - Cover: architecture, components, data flow, error handling, testing
 - Be ready to go back and clarify if something doesn't make sense
 
+## Architecture Strategy (Advisory)
+
+After the design is approved, evaluate whether the feature qualifies for the `harden-logic` skill (Railway Oriented Programming + Specification Pattern + Finite State Machine). **Most features do NOT qualify** — vanilla Laravel handles 90% of work without this layer. Apply the heuristics carefully.
+
+| Signal | Strength |
+|---|---|
+| Feature has 3+ sequential side-effecting steps that must short-circuit on first failure | Strong |
+| Model has explicit states with defined allowed transitions (pending → active → completed, etc.) | Strong |
+| Mid-pipeline failure must leave the DB in a fully consistent state (no partial mutations) | Strong |
+| Business rules compose (e.g. "eligible IF verified AND not in dispute, OR admin") | Moderate |
+| Subscription / billing / fulfillment / KYC / onboarding domain | Moderate (correlates with the above) |
+| CRUD endpoint, simple form, single API call, two-line validation | **Disqualifies** |
+| Existing controller with 1-2 if-statements | **Disqualifies** |
+| No state transitions involved | **Disqualifies** |
+
+**Decision:**
+- **All three strong signals fire** → recommend `harden-logic`
+- **Any disqualifier fires** → recommend vanilla Laravel; do NOT suggest `harden-logic`
+- **Mixed signals** → default to vanilla Laravel and note the trade-off
+
+**Output format** (record this in the design doc and the plan header):
+
+```markdown
+## Architecture Strategy
+
+**Recommendation:** <harden-logic | vanilla Laravel>
+**Reason:** <one-line tied to the strong/disqualifier signals above>
+```
+
+If you recommend `harden-logic`, also identify the 5 variables it requires (Domain, Model, ContextDto, RuleName, ActionName) in the design doc so `writing-plans` can carry them forward.
+
 ## Worktree Strategy (Advisory)
 
-After the design is approved and before writing the design doc, evaluate whether the implementation should run in an isolated git worktree. **This is an advisory recommendation** — the user/agent can always override at execution time.
+After the architecture strategy is decided and before writing the design doc, evaluate whether the implementation should run in an isolated git worktree. **This is an advisory recommendation** — the user/agent can always override at execution time.
 
 Score the design against these signals and pick the strongest applicable recommendation:
 
@@ -114,12 +148,12 @@ If the recommendation is "Required" or "Strongly recommend", `writing-plans` wil
 ## After the Design
 
 **Documentation:**
-- Write the validated design (including the Worktree Strategy block) to `docs/plans/YYYY-MM-DD-<topic>-design.md`
+- Write the validated design (including the Architecture Strategy and Worktree Strategy blocks) to `docs/plans/YYYY-MM-DD-<topic>-design.md`
 - Commit the design document to git (on the *current* branch — worktree creation, if any, happens later)
 
 **Implementation:**
 - Invoke the `writing-plans` skill to create a detailed implementation plan
-- Pass forward: design doc path, worktree recommendation, suggested branch name
+- Pass forward: design doc path, architecture recommendation (+5 variables if `harden-logic`), worktree recommendation, suggested branch name
 - Do NOT invoke any other skill. `writing-plans` is the next step.
 
 ## Key Principles
@@ -131,3 +165,4 @@ If the recommendation is "Required" or "Strongly recommend", `writing-plans` wil
 - **Incremental validation** - Present design, get approval before moving on
 - **Be flexible** - Go back and clarify when something doesn't make sense
 - **Worktree decision is advisory** - Make a recommendation; the plan execution honors it but the user can override
+- **Architecture strategy is conservative** - Default to vanilla Laravel; only recommend `harden-logic` when all three strong signals fire

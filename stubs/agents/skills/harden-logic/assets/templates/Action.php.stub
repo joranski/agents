@@ -1,0 +1,108 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Domain\{{Domain}}\Actions;
+
+use App\Architecture\Support\Result;
+use App\Domain\{{Domain}}\Contracts\{{Model}}State;
+use App\Domain\{{Domain}}\Data\{{ContextDto}};
+use App\Domain\{{Domain}}\Specifications\{{RuleName}}Spec;
+use App\Models\{{Model}};
+use Illuminate\Pipeline\Pipeline;
+use Illuminate\Support\Facades\DB;
+use Throwable;
+
+/**
+ * Orchestrator action for the {{ActionName}} workflow.
+ *
+ * Each pipeline stage receives and returns a Result. The first failure
+ * short-circuits the rest of the pipeline; the DB::transaction wrapper
+ * guarantees no partial mutations escape on failure.
+ *
+ * Add new stages by inserting new methods into ->through([...]) below.
+ * Never add `if (...)` branches inside an existing stage — split into
+ * a new stage instead.
+ */
+final readonly class {{ActionName}}
+{
+    public function __construct(
+        private Pipeline $pipeline,
+        private {{RuleName}}Spec $spec,
+    ) {}
+
+    public function execute({{ContextDto}} $data): Result
+    {
+        try {
+            return DB::transaction(fn (): Result => $this->pipeline
+                ->send(Result::success($data))
+                ->through([
+                    fn (Result $r, \Closure $next): Result => $r->isFailure()
+                        ? $r
+                        : $next($this->guard($r->unwrap())),
+                    fn (Result $r, \Closure $next): Result => $r->isFailure()
+                        ? $r
+                        : $next($this->loadModel($r->unwrap())),
+                    fn (Result $r, \Closure $next): Result => $r->isFailure()
+                        ? $r
+                        : $next($this->transitionState($r->unwrap())),
+                ])
+                ->thenReturn());
+        } catch (Throwable $e) {
+            return Result::failure($e);
+        }
+    }
+
+    /**
+     * Gate the input through the primary business rule.
+     */
+    private function guard({{ContextDto}} $data): Result
+    {
+        return $this->spec->isSatisfiedBy($data)
+            ? Result::success($data)
+            : Result::failure('{{RuleName}} not satisfied for the given {{ContextDto}}.');
+    }
+
+    /**
+     * Look up the target model. Returns a tuple-shaped array carrying
+     * both the DTO and the model so downstream stages have both.
+     */
+    private function loadModel({{ContextDto}} $data): Result
+    {
+        // Replace `id` with the actual identifier field on {{ContextDto}}.
+        $model = {{Model}}::find($data->id);
+
+        if ($model === null) {
+            return Result::failure("{{Model}} not found for id {$data->id}.");
+        }
+
+        return Result::success(['data' => $data, 'model' => $model]);
+    }
+
+    /**
+     * Verify the FSM allows the desired transition, then persist.
+     * Replace TARGET_STATE with the actual destination state for this
+     * workflow (e.g. {{Model}}State::Active).
+     */
+    private function transitionState(array $payload): Result
+    {
+        /** @var {{ContextDto}} $data */
+        $data = $payload['data'];
+        /** @var {{Model}} $model */
+        $model = $payload['model'];
+
+        $target = {{Model}}State::Active; // Replace with the actual target state.
+
+        if (! $model->state->canTransitionTo($target)) {
+            return Result::failure(
+                "Illegal transition: {{Model}} {$model->id} is {$model->state->value}, "
+                ."cannot transition to {$target->value}."
+            );
+        }
+
+        $model->state = $target;
+        $model->save();
+
+        return Result::success($model);
+    }
+}

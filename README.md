@@ -22,7 +22,7 @@ The installer will:
 
 1. **Prompt for credentials** — Filament Blueprint, Flux Pro, Anthropic API key (press Enter to skip any)
 2. **Configure Supervisor** — sets `SUPERVISOR_WORKER` in `.env` for the deploy pipeline
-3. **Publish 25 AI agent skills** → `.agents/skills/` (with collision-safe upgrades — see below)
+3. **Publish 26 AI agent skills** → `.agents/skills/` (with collision-safe upgrades — see below)
 4. **Publish agent rules** → `.agents/rules/`
 5. **Install Night Shift** → `bin/night-shift` (autonomous issue solver)
 6. **Configure MCP** → `claude.json` + `.gemini/settings.json`
@@ -107,7 +107,7 @@ Decision matrix the installer applies to each file:
 
 We ship all of them as fallback so you get them even without their upstream publisher.
 
-**Upgrading from v1.7.x → v1.8.0:** v1.8.0 adds 3 new bundled skills (`agents-md`, `webapp-testing`, `mcp-builder`). They install fresh — no migration step needed. If you're coming from v1.6.0 (pre-frontmatter), the original migration step still applies:
+**Upgrading from v1.8.x → v1.9.0:** v1.9.0 adds `harden-logic` (Railway-Oriented Programming + Specification Pattern + Finite State Machine scaffolding for stateful workflows) and wires it into `brainstorming`'s and `writing-plans`' decision flow. New files install fresh; updated planning skills will be deferred if you've edited them locally (re-run with `--force` only if you want our updates). If you're coming from v1.6.0 (pre-frontmatter), the original migration step still applies:
 
 ```bash
 composer update joranski/agents
@@ -192,6 +192,7 @@ Requires: `ANTHROPIC_API_KEY` in `.env`, `gh` CLI authenticated, clean git worki
 | `writing-skills` | Creating new skills with TDD |
 | `agents-md` | Generate and maintain `AGENTS.md` files (bundled, defers to `getsentry/skills`) |
 | `package-extraction-scout` | Identify mature services that should become standalone Composer packages |
+| `harden-logic` | Scaffold ROP + Specification + FSM architecture for stateful workflows (Result type, composable rule gates, guarded state transitions) |
 | `mcp-builder` | Build Model Context Protocol servers (bundled, defers to `anthropics/skills`) |
 | `webapp-testing` | Test web apps with Playwright at the agent level (bundled, defers to `anthropics/skills`) |
 

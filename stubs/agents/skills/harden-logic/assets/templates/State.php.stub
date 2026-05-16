@@ -1,0 +1,55 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Domain\{{Domain}}\Contracts;
+
+/**
+ * Finite State Machine for {{Model}}.
+ *
+ * Every valid state of {{Model}} is enumerated here. Every allowed
+ * transition is enumerated in allowedTransitions(). State persistence
+ * (the database column) MUST cast to this enum so invalid strings
+ * cannot enter the system.
+ *
+ * Add the cast to {{Model}}:
+ *
+ *     protected $casts = [
+ *         'state' => {{Model}}State::class,
+ *     ];
+ *
+ * Mutation must go through canTransitionTo() — never assign directly
+ * without checking.
+ */
+enum {{Model}}State: string
+{
+    // Replace these with the actual states. The transition graph in
+    // allowedTransitions() MUST cover every case below.
+    case Pending = 'pending';
+    case Active = 'active';
+    case Completed = 'completed';
+    case Cancelled = 'cancelled';
+
+    /**
+     * @return array<int, self>
+     */
+    public function allowedTransitions(): array
+    {
+        return match ($this) {
+            self::Pending => [self::Active, self::Cancelled],
+            self::Active => [self::Completed, self::Cancelled],
+            self::Completed => [],
+            self::Cancelled => [],
+        };
+    }
+
+    public function canTransitionTo(self $target): bool
+    {
+        return in_array($target, $this->allowedTransitions(), true);
+    }
+
+    public function isTerminal(): bool
+    {
+        return $this->allowedTransitions() === [];
+    }
+}

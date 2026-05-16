@@ -1,0 +1,69 @@
+<?php
+
+declare(strict_types=1);
+
+use App\Architecture\Support\Result;
+use App\Domain\{{Domain}}\Actions\{{ActionName}};
+use App\Domain\{{Domain}}\Contracts\{{Model}}State;
+use App\Domain\{{Domain}}\Data\{{ContextDto}};
+use App\Models\{{Model}};
+use Illuminate\Foundation\Testing\RefreshDatabase;
+
+uses(RefreshDatabase::class);
+
+it('runs the success track end-to-end and persists the state transition', function () {
+    // Arrange: a {{Model}} in a state that legitimately allows the
+    // target transition, plus a {{ContextDto}} that satisfies
+    // {{RuleName}}Spec.
+    $model = {{Model}}::factory()->create([
+        'state' => {{Model}}State::Pending, // Replace with the actual starting state.
+    ]);
+
+    $data = new {{ContextDto}}(
+        id: $model->id,
+        // ...fill the remaining DTO fields with values that satisfy
+        // {{RuleName}}Spec.
+    );
+
+    $action = app({{ActionName}}::class);
+
+    // Act
+    $result = $action->execute($data);
+
+    // Assert: success Result, state transitioned, no side-effect drift.
+    expect($result)->toBeInstanceOf(Result::class);
+    expect($result->isSuccess())->toBeTrue();
+
+    $model->refresh();
+    expect($model->state)->toBe({{Model}}State::Active); // Replace with the actual target state.
+});
+
+it('short-circuits on specification failure and leaves the model unchanged', function () {
+    // Arrange: same {{Model}} but a {{ContextDto}} that violates
+    // {{RuleName}}Spec (e.g. missing required field, invalid value).
+    $model = {{Model}}::factory()->create([
+        'state' => {{Model}}State::Pending,
+    ]);
+
+    $beforeAttributes = $model->getAttributes();
+    $beforeUpdatedAt = $model->updated_at?->toIso8601String();
+
+    $data = new {{ContextDto}}(
+        id: $model->id,
+        // ...fill the remaining DTO fields with values that VIOLATE
+        // {{RuleName}}Spec.
+    );
+
+    $action = app({{ActionName}}::class);
+
+    // Act
+    $result = $action->execute($data);
+
+    // Assert: failure Result with explicit error payload, no DB mutation.
+    expect($result->isFailure())->toBeTrue();
+    expect($result->unwrapError())->not->toBeNull();
+
+    $model->refresh();
+    expect($model->getAttributes())->toEqual($beforeAttributes);
+    expect($model->updated_at?->toIso8601String())->toBe($beforeUpdatedAt);
+});

@@ -22,11 +22,12 @@ Assume they are a skilled developer, but know almost nothing about our toolset o
 If `brainstorming` ran first, copy these forward into the plan header:
 
 - Goal & architecture summary from the design doc
+- **Architecture Strategy block** (harden-logic / vanilla Laravel) and reason; if harden-logic, the 5 variables (Domain, Model, ContextDto, RuleName, ActionName)
 - **Worktree Strategy block** (Required / Strongly recommend / Skip) and reason
 - Suggested branch name (if any)
 - Link back to the design doc
 
-If brainstorming did NOT run, decide the Worktree Strategy yourself using the same heuristics from `.agents/skills/brainstorming/SKILL.md` (Worktree Strategy table). Default for a multi-task plan: **Strongly recommend**.
+If brainstorming did NOT run, decide both strategies yourself using the heuristics in `.agents/skills/brainstorming/SKILL.md`. Defaults: Architecture = **vanilla Laravel** (only flip to `harden-logic` when all three strong signals fire); Worktree = **Strongly recommend** for any multi-task plan.
 
 ## Bite-Sized Task Granularity
 
@@ -51,6 +52,21 @@ If brainstorming did NOT run, decide the Worktree Strategy yourself using the sa
 **Tech Stack:** [Key technologies/libraries]
 
 **Design doc:** `docs/plans/YYYY-MM-DD-<topic>-design.md` (if brainstorming ran)
+
+## Architecture Strategy
+
+**Recommendation:** <harden-logic | vanilla Laravel>
+**Reason:** <one-line tied to the brainstorming Architecture Strategy heuristics>
+
+<!-- if harden-logic, include this block: -->
+**harden-logic variables:**
+- Domain: `<Fulfillment>`
+- Model: `<Shipment>`
+- ContextDto: `<DispatchShipmentData>`
+- RuleName: `<CarrierIsAvailable>`
+- ActionName: `<ProcessShipmentDispatch>`
+
+> Executors: if `harden-logic`, the first task block MUST invoke `.agents/skills/harden-logic/SKILL.md` (bootstrap mode if `app/Architecture/Support/Result.php` is missing, then scaffold mode with the 5 variables above). If `vanilla Laravel`, ignore the harden-logic skill entirely.
 
 ## Worktree Strategy
 
@@ -133,9 +149,11 @@ After saving the plan, hand off in this exact form:
 
 > **Plan complete and saved to `docs/plans/<filename>.md`.**
 >
+> **Architecture Strategy:** `<harden-logic | vanilla Laravel>` — `<reason>`
+>
 > **Worktree Strategy:** `<Required | Strongly recommend | Skip>` — `<reason>`
 >
-> **Next step:** invoke `.agents/skills/<single-flow-task-execution|executing-plans>/SKILL.md` to execute. If Worktree Strategy is Required/Strongly recommend, that skill will invoke `.agents/skills/using-git-worktrees/SKILL.md` first.
+> **Next step:** invoke `.agents/skills/<single-flow-task-execution|executing-plans>/SKILL.md` to execute. If Worktree Strategy is Required/Strongly recommend, that skill will invoke `.agents/skills/using-git-worktrees/SKILL.md` first. If Architecture Strategy is `harden-logic`, the first task block will invoke `.agents/skills/harden-logic/SKILL.md` for bootstrap + scaffold.
 
 Tracking:
 

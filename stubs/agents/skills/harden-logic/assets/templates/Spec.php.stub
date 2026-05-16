@@ -1,0 +1,38 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Domain\{{Domain}}\Specifications;
+
+use App\Architecture\Support\AbstractSpecification;
+use App\Domain\{{Domain}}\Data\{{ContextDto}};
+
+/**
+ * Business rule gate: {{RuleName}}.
+ *
+ * Returns true ONLY when the subject (a {{ContextDto}}) satisfies the
+ * rule expressed below. Must be deterministic and side-effect-free.
+ *
+ * Compose with other Specs via ->and() / ->or() / ->not() to express
+ * compound rules without nested if-statements.
+ */
+final class {{RuleName}}Spec extends AbstractSpecification
+{
+    public function isSatisfiedBy(mixed $subject): bool
+    {
+        if (! $subject instanceof {{ContextDto}}) {
+            return false;
+        }
+
+        // Replace this body with the actual business rule. Examples:
+        //
+        //   return $subject->carrierId !== null
+        //       && $subject->scheduledFor > now()
+        //       && $subject->weightKg <= 30.0;
+        //
+        // Keep the expression flat. If the rule needs branching,
+        // extract sub-rules into their own Spec classes and combine
+        // them with ->and() / ->or() at the call site.
+        return false;
+    }
+}
