@@ -10,7 +10,8 @@ class GitPush extends Command
 {
     protected $signature = 'git:push
                             {--skip-tests : Skip running the test suite}
-                            {--skip-pint : Skip code style fixing}';
+                            {--skip-pint : Skip code style fixing}
+                            {--no-parallel : Disable parallel execution for Pint and tests}';
 
     protected $description = 'Safe git push pipeline: preflight checks → stage → commit → push';
 
@@ -38,25 +39,44 @@ class GitPush extends Command
             }
         }
 
-        // 1b. Pending migrations
-        $migrationCheck = Process::run('php artisan migrate:status --no-ansi');
-        $migrationOutput = $migrationCheck->output();
-        if (str_contains($migrationOutput, 'Pending')) {
-            $this->components->error('Pending migrations detected! Run them locally before pushing.');
-            $this->line($migrationOutput);
+        // 1b. Pending migrations (Laravel only)
+        if (file_exists($this->laravel->basePath('artisan'))) {
+            $migrationCheck = Process::run('php artisan migrate:status --no-ansi');
+            $migrationOutput = $migrationCheck->output();
+            if (str_contains($migrationOutput, 'Pending')) {
+                $this->components->error('Pending migrations detected! Run them locally before pushing.');
+                $this->line($migrationOutput);
 
-            if (! Prompts\confirm('Continue anyway?', false)) {
-                return self::FAILURE;
+                if (! Prompts\confirm('Continue anyway?', false)) {
+                    return self::FAILURE;
+                }
+            } else {
+                $this->line('  OK No pending migrations');
             }
         } else {
-            $this->line('  OK No pending migrations');
+            $this->line('  <fg=gray>skip</> Migrations (not a Laravel project)');
         }
+
+        $useParallel = ! $this->option('no-parallel');
 
         // 1c. Pint (code style)
         if (! $this->option('skip-pint')) {
-            $this->newLine();
-            $this->components->info('Running Pint (code style)...');
-            system('./vendor/bin/pint --dirty --format agent');
+            $pint = $this->laravel->basePath('vendor/bin/pint');
+            if (file_exists($pint)) {
+                $this->newLine();
+                $this->components->info('Running Pint (code style)...');
+                $pintArgs = '--dirty --format agent';
+                if ($useParallel) {
+                    $pintArgs .= ' --parallel';
+                }
+                $pintExit = $this->runPassthru(escapeshellarg($pint).' '.$pintArgs);
+                if ($pintExit !== 0 && $useParallel) {
+                    $this->components->warn('Pint --parallel failed; retrying without --parallel...');
+                    $this->runPassthru(escapeshellarg($pint).' --dirty --format agent');
+                }
+            } else {
+                $this->line('  <fg=gray>skip</> Pint (vendor/bin/pint not found)');
+            }
         }
 
         // 1d. Tests
@@ -64,12 +84,7 @@ class GitPush extends Command
             $this->newLine();
             $this->components->info('Running test suite...');
 
-            // Run tests in a clean env so phpunit.xml's <env> tags are the sole config source.
-            // Without this, the parent artisan process leaks env vars (DB_CONNECTION, APP_ENV, etc.)
-            // that override phpunit.xml and cause tests to hit the wrong database/driver.
-            $path = getenv('PATH');
-            $home = getenv('HOME');
-            passthru("env -i PATH={$path} HOME={$home} php artisan test --compact", $testExitCode);
+            $testExitCode = $this->runTestSuite($useParallel);
 
             if ($testExitCode !== 0) {
                 $this->components->error('Tests failed! Fix them before pushing.');
@@ -157,5 +172,53 @@ class GitPush extends Command
         }
 
         return self::SUCCESS;
+    }
+
+    private function runTestSuite(bool $useParallel): int
+    {
+        $basePath = $this->laravel->basePath();
+        $path = getenv('PATH') ?: '/usr/bin:/bin';
+        $home = getenv('HOME') ?: '';
+
+        if (file_exists($basePath.'/artisan')) {
+            $parallel = $useParallel ? ' --parallel' : '';
+            $cmd = "env -i PATH={$path} HOME={$home} php artisan test --compact{$parallel}";
+
+            $exitCode = $this->runPassthru($cmd);
+            if ($exitCode !== 0 && $useParallel) {
+                $this->components->warn('Tests --parallel failed; retrying without --parallel...');
+
+                return $this->runPassthru("env -i PATH={$path} HOME={$home} php artisan test --compact");
+            }
+
+            return $exitCode;
+        }
+
+        if (file_exists($basePath.'/vendor/bin/pest')) {
+            $parallel = $useParallel ? ' --parallel' : '';
+            $exitCode = $this->runPassthru($basePath.'/vendor/bin/pest'.$parallel);
+            if ($exitCode !== 0 && $useParallel) {
+                $this->components->warn('Pest --parallel failed; retrying without --parallel...');
+
+                return $this->runPassthru($basePath.'/vendor/bin/pest');
+            }
+
+            return $exitCode;
+        }
+
+        if (file_exists($basePath.'/vendor/bin/phpunit')) {
+            return $this->runPassthru($basePath.'/vendor/bin/phpunit');
+        }
+
+        $this->components->warn('No test runner found (artisan, pest, or phpunit).');
+
+        return Prompts\confirm('Continue without running tests?', false) ? 0 : 1;
+    }
+
+    private function runPassthru(string $command): int
+    {
+        passthru($command, $exitCode);
+
+        return $exitCode;
     }
 }

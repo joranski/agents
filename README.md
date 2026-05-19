@@ -66,9 +66,10 @@ pint (code style) → test suite → stage files → commit → push
 ```
 
 ```bash
-php artisan git:push                   # Full pipeline
+php artisan git:push                   # Full pipeline (Pint + tests use --parallel by default)
 php artisan git:push --skip-tests      # Skip test suite
 php artisan git:push --skip-pint       # Skip code formatting
+php artisan git:push --no-parallel     # Disable parallel Pint/tests (older tooling or CI)
 ```
 
 ### `php artisan agents:install`
