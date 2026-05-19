@@ -46,9 +46,18 @@ it('is true', function () {
 
 ### Running Tests
 
-- Run minimal tests with filter before finalizing: `php artisan test --compact --filter=testName`.
-- Run all tests: `php artisan test --compact`.
-- Run file: `php artisan test --compact tests/Feature/ExampleTest.php`.
+Use a **1G memory limit** by default so suites do not fail with allowed-memory exhaustion and need a manual rerun. PHP only raises the limit when the server allows it (`php -d memory_limit=1G` or `phpunit.xml` below).
+
+**Full suite (fastest):** `--compact --parallel --no-coverage`. Parallel uses ParaTest (Pest/Laravel ship it). Skip coverage during local preflight; collect coverage in CI when needed.
+
+- Run all tests: `php -d memory_limit=1G artisan test --compact --parallel --no-coverage`.
+- Package/library full suite: `php -d memory_limit=1G vendor/bin/pest --compact --parallel --no-coverage`.
+- In `git:push` / clean env: `env -i PATH=$PATH HOME=$HOME php -d memory_limit=1G artisan test --compact --parallel --no-coverage`.
+
+**Targeted runs (no `--parallel`):** process startup makes parallel slower for one file or filter.
+
+- Run minimal tests with filter: `php -d memory_limit=1G artisan test --compact --filter=testName`.
+- Run one file: `php -d memory_limit=1G artisan test --compact tests/Feature/ExampleTest.php`.
 
 ## Assertions
 

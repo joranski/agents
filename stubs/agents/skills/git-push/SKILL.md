@@ -50,17 +50,21 @@ vendor/bin/pint --dirty --parallel --format agent
 
 # 1d. Tests (pick first available runner; always use --parallel when supported)
 # Laravel:
-env -i PATH=$PATH HOME=$HOME php artisan test --compact --parallel
+env -i PATH=$PATH HOME=$HOME php -d memory_limit=1G artisan test --compact --parallel --no-coverage
 
 # Plain PHP (no artisan):
-vendor/bin/pest --parallel
+php -d memory_limit=1G vendor/bin/pest --compact --parallel --no-coverage
 # or:
-vendor/bin/phpunit
+php -d memory_limit=1G vendor/bin/phpunit
 ```
 
 **Parallel flags:** Use `--parallel` on Pint and the test runner by default for speed. If parallel fails (old Pint, missing `brianium/paratest`, CI with 1 CPU), retry once without `--parallel` and note the fallback in your summary.
 
 **Why `env -i` for `artisan test`?** Only when using `php artisan test`. The parent artisan process can leak env vars (`DB_CONNECTION`, `APP_ENV`) that override `phpunit.xml`. `env -i` strips inherited env so PHPUnit/Pest config is authoritative. Not needed for direct `vendor/bin/pest` invocations.
+
+**Why `-d memory_limit=1G`?** Default PHP limits (often 128M) cause large Pest suites to die mid-run; agents then rerun with a higher limit. Starting at 1G avoids that wasted cycle when the host allows it.
+
+**Why `--parallel --no-coverage`?** Full-suite preflight should be as fast as possible. `--parallel` uses ParaTest (one process per CPU by default). `--no-coverage` skips coverage collection — use `php artisan test --coverage` in CI when you need a report. Do **not** pass `--parallel` for a single file or `--filter` run (process startup overhead dominates).
 
 **If tests fail:** Show failures. Do NOT proceed. Help fix them if asked.
 
@@ -147,9 +151,9 @@ git push origin <branch>
 | Branch | `git rev-parse --abbrev-ref HEAD` | Always | No |
 | Migrations | `php artisan migrate:status --no-ansi` | Laravel only | Warn; ask to continue |
 | Pint | `vendor/bin/pint --dirty --parallel --format agent` | If `vendor/bin/pint` exists | No (auto-fixes) |
-| Tests (Laravel) | `env -i PATH=$PATH HOME=$HOME php artisan test --compact --parallel` | If `artisan` exists | **Yes** |
-| Tests (Pest) | `vendor/bin/pest --parallel` | No artisan, pest exists | **Yes** |
-| Tests (PHPUnit) | `vendor/bin/phpunit` | No artisan/pest, phpunit exists | **Yes** |
+| Tests (Laravel) | `env -i PATH=$PATH HOME=$HOME php -d memory_limit=1G artisan test --compact --parallel --no-coverage` | If `artisan` exists | **Yes** |
+| Tests (Pest) | `php -d memory_limit=1G vendor/bin/pest --compact --parallel --no-coverage` | No artisan, pest exists | **Yes** |
+| Tests (PHPUnit) | `php -d memory_limit=1G vendor/bin/phpunit` | No artisan/pest, phpunit exists | **Yes** |
 | Diff | `git status` + `git diff` | Always | No |
 | Commit | `git commit` with generated message | Always | No |
 | Push | `git push origin <branch>` | Always | Report error |
@@ -162,6 +166,7 @@ Projects with `joranski/agents` installed can run the interactive pipeline local
 php artisan git:push                   # Pint (--parallel) + tests (--parallel) + interactive stage/commit/push
 php artisan git:push --skip-tests
 php artisan git:push --skip-pint
+php artisan git:push --no-parallel     # Disable parallel Pint/tests (older tooling or CI)
 ```
 
 The artisan command mirrors this skill's preflight defaults. Agents should still generate the commit message from the diff unless the user is running the command interactively (the command prompts for a message).
@@ -177,6 +182,7 @@ The artisan command mirrors this skill's preflight defaults. Agents should still
 
 **Skipping `env -i` when using `php artisan test`**
 - Parent process env leaks break database config intermittently
+- Always use: `env -i PATH=$PATH HOME=$HOME php -d memory_limit=1G artisan test --compact --parallel --no-coverage`
 - Not needed for direct `vendor/bin/pest`
 
 **Pushing without any test run when a runner exists**

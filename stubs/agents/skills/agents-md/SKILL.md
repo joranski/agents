@@ -72,8 +72,8 @@ npm run dev
 ### 4. Daily Commands
 What developers (and agents) run constantly:
 ```bash
-php artisan test                      # Run all tests
-php artisan test --filter=AuthTest    # Single test
+php -d memory_limit=1G artisan test --compact --parallel --no-coverage   # Full suite (fast)
+php -d memory_limit=1G artisan test --compact --filter=AuthTest        # Single test (no --parallel)
 vendor/bin/pint                       # Format code
 php artisan tinker                    # REPL
 ```

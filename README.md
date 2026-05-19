@@ -72,6 +72,8 @@ php artisan git:push --skip-pint       # Skip code formatting
 php artisan git:push --no-parallel     # Disable parallel Pint/tests (older tooling or CI)
 ```
 
+Tests run in a **clean environment** (`env -i`) so inherited `.env` values (e.g. `DB_CONNECTION`) do not override `phpunit.xml`. The suite uses `php -d memory_limit=1G artisan test --compact --parallel --no-coverage` for fast preflight — parallel ParaTest execution, no coverage collection (use CI for coverage reports).
+
 ### `php artisan agents:install`
 
 Publish agent files into your project with **smart collision handling** — your local edits and skills owned by other Composer packages (e.g. `laravel/boost`) are preserved automatically.

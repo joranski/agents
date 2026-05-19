@@ -161,14 +161,14 @@ Each file must `php -l` clean before moving to the next:
 4. `{ActionName}.php` — render `assets/templates/Action.php.stub`
 5. `{ActionName}Test.php` — render `assets/templates/Test.php.stub`
 
-After step 5, run `vendor/bin/pest tests/Feature/{ActionName}Test.php`. Both tests must pass before you call the work done.
+After step 5, run `php -d memory_limit=1G vendor/bin/pest tests/Feature/{ActionName}Test.php`. Both tests must pass before you call the work done.
 
 ### Step 6: Verify Both Tracks
 
 Run the test suite. Both the success-track test and the short-circuit test must pass:
 
 ```bash
-vendor/bin/pest tests/Feature/{ActionName}Test.php
+php -d memory_limit=1G vendor/bin/pest tests/Feature/{ActionName}Test.php
 ```
 
 If either fails, debug via `systematic-debugging` — do not "fix" by loosening assertions.

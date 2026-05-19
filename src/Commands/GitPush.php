@@ -182,13 +182,13 @@ class GitPush extends Command
 
         if (file_exists($basePath.'/artisan')) {
             $parallel = $useParallel ? ' --parallel' : '';
-            $cmd = "env -i PATH={$path} HOME={$home} php artisan test --compact{$parallel}";
+            $cmd = "env -i PATH={$path} HOME={$home} php -d memory_limit=1G artisan test --compact --no-coverage{$parallel}";
 
             $exitCode = $this->runPassthru($cmd);
             if ($exitCode !== 0 && $useParallel) {
                 $this->components->warn('Tests --parallel failed; retrying without --parallel...');
 
-                return $this->runPassthru("env -i PATH={$path} HOME={$home} php artisan test --compact");
+                return $this->runPassthru("env -i PATH={$path} HOME={$home} php -d memory_limit=1G artisan test --compact --no-coverage");
             }
 
             return $exitCode;
@@ -196,18 +196,18 @@ class GitPush extends Command
 
         if (file_exists($basePath.'/vendor/bin/pest')) {
             $parallel = $useParallel ? ' --parallel' : '';
-            $exitCode = $this->runPassthru($basePath.'/vendor/bin/pest'.$parallel);
+            $exitCode = $this->runPassthru("php -d memory_limit=1G {$basePath}/vendor/bin/pest --compact --no-coverage{$parallel}");
             if ($exitCode !== 0 && $useParallel) {
                 $this->components->warn('Pest --parallel failed; retrying without --parallel...');
 
-                return $this->runPassthru($basePath.'/vendor/bin/pest');
+                return $this->runPassthru("php -d memory_limit=1G {$basePath}/vendor/bin/pest --compact --no-coverage");
             }
 
             return $exitCode;
         }
 
         if (file_exists($basePath.'/vendor/bin/phpunit')) {
-            return $this->runPassthru($basePath.'/vendor/bin/phpunit');
+            return $this->runPassthru("php -d memory_limit=1G {$basePath}/vendor/bin/phpunit");
         }
 
         $this->components->warn('No test runner found (artisan, pest, or phpunit).');
