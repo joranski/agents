@@ -48,25 +48,36 @@ php artisan migrate:status --no-ansi
 # 1c. Pint (if vendor/bin/pint exists)
 vendor/bin/pint --dirty --parallel --format agent
 
-# 1d. Tests (pick first available runner; always use --parallel when supported)
-# Laravel:
-env -i PATH=$PATH HOME=$HOME php -d memory_limit=1G artisan test --compact --parallel --no-coverage
+# 1d. Tests (pick first available runner; **sequential by default** — parallel multiplies RAM)
+# Laravel (default — reliable, one PHP process):
+env -i PATH=$PATH HOME=$HOME php -d memory_limit=1G artisan test --compact --no-coverage
+
+# Optional parallel (only when host has ~512M+ RAM per CPU core):
+env -i PATH=$PATH HOME=$HOME php -d memory_limit=512M artisan test --compact --parallel --processes=2 --no-coverage
 
 # Plain PHP (no artisan):
-php -d memory_limit=1G vendor/bin/pest --compact --parallel --no-coverage
+php -d memory_limit=1G vendor/bin/pest --compact --no-coverage
 # or:
 php -d memory_limit=1G vendor/bin/phpunit
 ```
 
-**Parallel flags:** Use `--parallel` on Pint and the test runner by default for speed. If parallel fails (old Pint, missing `brianium/paratest`, CI with 1 CPU), retry once without `--parallel` and note the fallback in your summary.
+**Parallel flags:** Use `--parallel` on Pint by default for speed. **Do not parallelize tests by default** — each worker is a full PHP process with its own `memory_limit`, so 8 cores × 1G ≈ 8GB RAM and often OOMs. Default test command is sequential. Only add `--parallel` when the machine has headroom; cap workers with `--processes=2` and use `512M` per worker, not `1G`.
 
 **Why `env -i` for `artisan test`?** Only when using `php artisan test`. The parent artisan process can leak env vars (`DB_CONNECTION`, `APP_ENV`) that override `phpunit.xml`. `env -i` strips inherited env so PHPUnit/Pest config is authoritative. Not needed for direct `vendor/bin/pest` invocations.
 
-**Why `-d memory_limit=1G`?** Default PHP limits (often 128M) cause large Pest suites to die mid-run; agents then rerun with a higher limit. Starting at 1G avoids that wasted cycle when the host allows it.
+**Why `-d memory_limit=1G` (sequential)?** Default PHP limits (often 128M) cause large Pest suites to die mid-run. One process at 1G is enough for most Laravel apps. Raising to 2G rarely makes sequential runs *faster* — it only helps completion when a single suite is genuinely heavy.
 
-**Why `--parallel --no-coverage`?** Full-suite preflight should be as fast as possible. `--parallel` uses ParaTest (one process per CPU by default). `--no-coverage` skips coverage collection — use `php artisan test --coverage` in CI when you need a report. Do **not** pass `--parallel` for a single file or `--filter` run (process startup overhead dominates).
+**Why not `--parallel --no-coverage` by default?** Parallel can be faster wall-clock time, but multiplies memory. Use it only when you have spare RAM. Skip coverage during local preflight regardless; collect in CI with `php artisan test --coverage`.
 
-**If tests fail:** Show failures. Do NOT proceed. Help fix them if asked.
+**When tests fail — diagnose before retrying blindly:**
+1. Read the output for `Allowed memory size`, `Killed`, or `Out of memory`
+2. Group failures by suite directory (`tests/Feature`, `tests/Unit`, `tests/Browser`, or `packages/*/tests`)
+3. If memory + parallel → retry sequential: `php -d memory_limit=1G artisan test --compact --no-coverage`
+4. If memory + sequential → set `<ini name="memory_limit" value="512M"/>` in `phpunit.xml` or try `-d memory_limit=2G`
+5. Isolate heavy files: `php artisan test --compact tests/Feature/HeavyTest.php`
+6. Run suites separately to find the bottleneck: `tests/Feature` then `tests/Unit`
+
+**If tests fail:** Show failures and diagnostics. Do NOT proceed. Help fix them if asked.
 
 **If no test runner exists:** Warn once ("No test runner found — skipping tests") and ask the user to confirm before push. Do not silently skip.
 
@@ -140,7 +151,7 @@ git push origin <branch>
 
 ```bash
 git pull --rebase origin <branch>
-# Re-run tests with the same runner + --parallel used in Step 1
+# Re-run tests with the same mode used in Step 1 (sequential unless you opted into --parallel)
 git push origin <branch>
 ```
 
@@ -151,8 +162,8 @@ git push origin <branch>
 | Branch | `git rev-parse --abbrev-ref HEAD` | Always | No |
 | Migrations | `php artisan migrate:status --no-ansi` | Laravel only | Warn; ask to continue |
 | Pint | `vendor/bin/pint --dirty --parallel --format agent` | If `vendor/bin/pint` exists | No (auto-fixes) |
-| Tests (Laravel) | `env -i PATH=$PATH HOME=$HOME php -d memory_limit=1G artisan test --compact --parallel --no-coverage` | If `artisan` exists | **Yes** |
-| Tests (Pest) | `php -d memory_limit=1G vendor/bin/pest --compact --parallel --no-coverage` | No artisan, pest exists | **Yes** |
+| Tests (Laravel) | `env -i PATH=$PATH HOME=$HOME php -d memory_limit=1G artisan test --compact --no-coverage` | If `artisan` exists | **Yes** |
+| Tests (Pest) | `php -d memory_limit=1G vendor/bin/pest --compact --no-coverage` | No artisan, pest exists | **Yes** |
 | Tests (PHPUnit) | `php -d memory_limit=1G vendor/bin/phpunit` | No artisan/pest, phpunit exists | **Yes** |
 | Diff | `git status` + `git diff` | Always | No |
 | Commit | `git commit` with generated message | Always | No |
@@ -163,13 +174,14 @@ git push origin <branch>
 Projects with `joranski/agents` installed can run the interactive pipeline locally:
 
 ```bash
-php artisan git:push                   # Pint (--parallel) + tests (--parallel) + interactive stage/commit/push
+php artisan git:push                   # Pint (--parallel) + sequential tests + interactive stage/commit/push
 php artisan git:push --skip-tests
 php artisan git:push --skip-pint
-php artisan git:push --no-parallel     # Disable parallel Pint/tests (older tooling or CI)
+php artisan git:push --parallel        # Opt-in parallel tests (needs ~512M RAM per CPU core)
+php artisan git:push --no-parallel     # Disable parallel Pint
 ```
 
-The artisan command mirrors this skill's preflight defaults. Agents should still generate the commit message from the diff unless the user is running the command interactively (the command prompts for a message).
+The artisan command runs tests **sequentially by default** and prints diagnostics (failing suite areas + memory/parallel suggestions) when tests fail. Pass `--parallel` only on hosts with spare RAM.
 
 ## Common Mistakes
 
@@ -182,14 +194,19 @@ The artisan command mirrors this skill's preflight defaults. Agents should still
 
 **Skipping `env -i` when using `php artisan test`**
 - Parent process env leaks break database config intermittently
-- Always use: `env -i PATH=$PATH HOME=$HOME php -d memory_limit=1G artisan test --compact --parallel --no-coverage`
+- Always use: `env -i PATH=$PATH HOME=$HOME php -d memory_limit=1G artisan test --compact --no-coverage`
 - Not needed for direct `vendor/bin/pest`
+
+**Defaulting to `--parallel` for full-suite preflight**
+- Parallel multiplies memory (cores × memory_limit). Often OOMs even at 1G per worker
+- Default sequential; parallel is opt-in when RAM allows
+
+**Ignoring parallel/memory failure diagnostics**
+- On OOM/killed output, retry sequential before raising memory
+- Group failures by `tests/Feature|Unit|Browser` and isolate heavy files
 
 **Pushing without any test run when a runner exists**
 - Never skip if `artisan`, `pest`, or `phpunit` is available
 
 **One-liner commit messages for multi-file changes**
 - 3+ files → use body bullets grouped by purpose
-
-**Ignoring parallel failures without retry**
-- If `--parallel` errors, retry once without it before giving up

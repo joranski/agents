@@ -19,7 +19,7 @@ class AgentsInstall extends Command
 
     private const PACKAGE_NAME = 'joranski/agents';
 
-    private const PACKAGE_VERSION = '1.9.2';
+    private const PACKAGE_VERSION = '1.9.3';
 
     private const MANIFEST_RELATIVE_PATH = '.agents/.manifest.json';
 

@@ -46,15 +46,26 @@ it('is true', function () {
 
 ### Running Tests
 
-Use a **1G memory limit** by default so suites do not fail with allowed-memory exhaustion and need a manual rerun. PHP only raises the limit when the server allows it (`php -d memory_limit=1G` or `phpunit.xml` below).
+Use a **1G memory limit** for sequential full-suite runs. PHP only raises the limit when the server allows it (`php -d memory_limit=1G` or `phpunit.xml` below).
 
-**Full suite (fastest):** `--compact --parallel --no-coverage`. Parallel uses ParaTest (Pest/Laravel ship it). Skip coverage during local preflight; collect coverage in CI when needed.
+**Full suite (default — reliable):** sequential, no coverage. One PHP process at 1G avoids the RAM multiplication that makes `--parallel` OOM on typical dev machines.
 
-- Run all tests: `php -d memory_limit=1G artisan test --compact --parallel --no-coverage`.
-- Package/library full suite: `php -d memory_limit=1G vendor/bin/pest --compact --parallel --no-coverage`.
-- In `git:push` / clean env: `env -i PATH=$PATH HOME=$HOME php -d memory_limit=1G artisan test --compact --parallel --no-coverage`.
+- Run all tests: `php -d memory_limit=1G artisan test --compact --no-coverage`.
+- Package/library full suite: `php -d memory_limit=1G vendor/bin/pest --compact --no-coverage`.
+- In `git:push` / clean env: `env -i PATH=$PATH HOME=$HOME php -d memory_limit=1G artisan test --compact --no-coverage`.
 
-**Targeted runs (no `--parallel`):** process startup makes parallel slower for one file or filter.
+**Parallel (opt-in — faster wall-clock, higher RAM):** only when the host has ~512M+ free RAM **per CPU core**. Cap workers — do not use 1G per worker on many cores.
+
+- `php -d memory_limit=512M artisan test --compact --parallel --processes=2 --no-coverage`
+- If parallel OOMs → fall back to sequential (above). Raising to 2G per worker usually makes things *slower* (swap), not faster.
+
+**When tests fail with memory errors — diagnose:**
+1. Check if `--parallel` was used; retry sequential first
+2. Group failures by suite (`tests/Feature`, `tests/Unit`, `tests/Browser`)
+3. Run heavy files alone: `php artisan test --compact tests/Feature/HeavyTest.php`
+4. Persist limit in `phpunit.xml`: `<php><ini name="memory_limit" value="512M"/></php>`
+
+**Targeted runs (never `--parallel`):** process startup makes parallel slower for one file or filter.
 
 - Run minimal tests with filter: `php -d memory_limit=1G artisan test --compact --filter=testName`.
 - Run one file: `php -d memory_limit=1G artisan test --compact tests/Feature/ExampleTest.php`.

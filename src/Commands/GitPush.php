@@ -11,7 +11,8 @@ class GitPush extends Command
     protected $signature = 'git:push
                             {--skip-tests : Skip running the test suite}
                             {--skip-pint : Skip code style fixing}
-                            {--no-parallel : Disable parallel execution for Pint and tests}';
+                            {--parallel : Run tests in parallel (needs ~512M RAM per CPU core; default is sequential)}
+                            {--no-parallel : Disable parallel execution for Pint}';
 
     protected $description = 'Safe git push pipeline: preflight checks → stage → commit → push';
 
@@ -57,7 +58,8 @@ class GitPush extends Command
             $this->line('  <fg=gray>skip</> Migrations (not a Laravel project)');
         }
 
-        $useParallel = ! $this->option('no-parallel');
+        $usePintParallel = ! $this->option('no-parallel');
+        $useTestParallel = $this->option('parallel');
 
         // 1c. Pint (code style)
         if (! $this->option('skip-pint')) {
@@ -66,11 +68,11 @@ class GitPush extends Command
                 $this->newLine();
                 $this->components->info('Running Pint (code style)...');
                 $pintArgs = '--dirty --format agent';
-                if ($useParallel) {
+                if ($usePintParallel) {
                     $pintArgs .= ' --parallel';
                 }
                 $pintExit = $this->runPassthru(escapeshellarg($pint).' '.$pintArgs);
-                if ($pintExit !== 0 && $useParallel) {
+                if ($pintExit !== 0 && $usePintParallel) {
                     $this->components->warn('Pint --parallel failed; retrying without --parallel...');
                     $this->runPassthru(escapeshellarg($pint).' --dirty --format agent');
                 }
@@ -82,12 +84,14 @@ class GitPush extends Command
         // 1d. Tests
         if (! $this->option('skip-tests')) {
             $this->newLine();
-            $this->components->info('Running test suite...');
+            $mode = $useTestParallel ? 'parallel' : 'sequential';
+            $this->components->info("Running test suite ({$mode})...");
 
-            $testExitCode = $this->runTestSuite($useParallel);
+            $result = $this->runTestSuite($useTestParallel);
 
-            if ($testExitCode !== 0) {
+            if ($result['exit'] !== 0) {
                 $this->components->error('Tests failed! Fix them before pushing.');
+                $this->printTestDiagnostics($result);
 
                 return self::FAILURE;
             }
@@ -174,45 +178,264 @@ class GitPush extends Command
         return self::SUCCESS;
     }
 
-    private function runTestSuite(bool $useParallel): int
+    /**
+     * @return array{exit: int, output: string, command: string, parallel: bool, retried_sequential: bool}
+     */
+    private function runTestSuite(bool $useParallel): array
     {
         $basePath = $this->laravel->basePath();
         $path = getenv('PATH') ?: '/usr/bin:/bin';
         $home = getenv('HOME') ?: '';
+        $memoryLimit = '1G';
 
         if (file_exists($basePath.'/artisan')) {
-            $parallel = $useParallel ? ' --parallel' : '';
-            $cmd = "env -i PATH={$path} HOME={$home} php -d memory_limit=1G artisan test --compact --no-coverage{$parallel}";
+            $cmd = $this->buildArtisanTestCommand($path, $home, $memoryLimit, $useParallel);
+            $result = $this->runTestCommand($cmd, $useParallel);
 
-            $exitCode = $this->runPassthru($cmd);
-            if ($exitCode !== 0 && $useParallel) {
-                $this->components->warn('Tests --parallel failed; retrying without --parallel...');
+            if ($result['exit'] !== 0 && $useParallel && $this->shouldRetrySequential($result['output'])) {
+                $this->components->warn('Parallel run hit resource limits; retrying sequential...');
+                $sequentialCmd = $this->buildArtisanTestCommand($path, $home, $memoryLimit, false);
+                $retry = $this->runTestCommand($sequentialCmd, false);
+                $retry['retried_sequential'] = true;
 
-                return $this->runPassthru("env -i PATH={$path} HOME={$home} php -d memory_limit=1G artisan test --compact --no-coverage");
+                return $retry;
             }
 
-            return $exitCode;
+            return $result;
         }
 
         if (file_exists($basePath.'/vendor/bin/pest')) {
-            $parallel = $useParallel ? ' --parallel' : '';
-            $exitCode = $this->runPassthru("php -d memory_limit=1G {$basePath}/vendor/bin/pest --compact --no-coverage{$parallel}");
-            if ($exitCode !== 0 && $useParallel) {
-                $this->components->warn('Pest --parallel failed; retrying without --parallel...');
+            $cmd = $this->buildPestCommand($basePath, $memoryLimit, $useParallel);
+            $result = $this->runTestCommand($cmd, $useParallel);
 
-                return $this->runPassthru("php -d memory_limit=1G {$basePath}/vendor/bin/pest --compact --no-coverage");
+            if ($result['exit'] !== 0 && $useParallel && $this->shouldRetrySequential($result['output'])) {
+                $this->components->warn('Parallel run hit resource limits; retrying sequential...');
+                $retry = $this->runTestCommand($this->buildPestCommand($basePath, $memoryLimit, false), false);
+                $retry['retried_sequential'] = true;
+
+                return $retry;
             }
 
-            return $exitCode;
+            return $result;
         }
 
         if (file_exists($basePath.'/vendor/bin/phpunit')) {
-            return $this->runPassthru("php -d memory_limit=1G {$basePath}/vendor/bin/phpunit");
+            return $this->runTestCommand("php -d memory_limit={$memoryLimit} {$basePath}/vendor/bin/phpunit", false);
         }
 
         $this->components->warn('No test runner found (artisan, pest, or phpunit).');
 
-        return Prompts\confirm('Continue without running tests?', false) ? 0 : 1;
+        $continue = Prompts\confirm('Continue without running tests?', false);
+
+        return [
+            'exit' => $continue ? 0 : 1,
+            'output' => '',
+            'command' => '',
+            'parallel' => false,
+            'retried_sequential' => false,
+        ];
+    }
+
+    private function buildArtisanTestCommand(string $path, string $home, string $memoryLimit, bool $parallel): string
+    {
+        $parallelFlag = $parallel ? ' --parallel' : '';
+
+        return "env -i PATH={$path} HOME={$home} php -d memory_limit={$memoryLimit} artisan test --compact --no-coverage{$parallelFlag}";
+    }
+
+    private function buildPestCommand(string $basePath, string $memoryLimit, bool $parallel): string
+    {
+        $parallelFlag = $parallel ? ' --parallel' : '';
+
+        return "php -d memory_limit={$memoryLimit} {$basePath}/vendor/bin/pest --compact --no-coverage{$parallelFlag}";
+    }
+
+    /**
+     * @return array{exit: int, output: string, command: string, parallel: bool, retried_sequential: bool}
+     */
+    private function runTestCommand(string $command, bool $parallel): array
+    {
+        $this->line("  <fg=gray>$ {$command}</>");
+
+        $process = Process::timeout(3600)->run($command);
+        $output = trim($process->output().$process->errorOutput());
+
+        if ($output !== '') {
+            $this->newLine();
+            $this->line($output);
+        }
+
+        return [
+            'exit' => $process->exitCode() ?? 1,
+            'output' => $output,
+            'command' => $command,
+            'parallel' => $parallel,
+            'retried_sequential' => false,
+        ];
+    }
+
+    private function shouldRetrySequential(string $output): bool
+    {
+        if ($this->isMemoryFailure($output)) {
+            return true;
+        }
+
+        return str_contains(strtolower($output), 'paratest')
+            || str_contains(strtolower($output), 'processes');
+    }
+
+    private function isMemoryFailure(string $output): bool
+    {
+        return (bool) preg_match(
+            '/allowed memory size|out of memory|memory exhausted|cannot allocate memory|killed|signal 9|oom/i',
+            $output
+        );
+    }
+
+    /**
+     * @param  array{exit: int, output: string, command: string, parallel: bool, retried_sequential: bool}  $result
+     */
+    private function printTestDiagnostics(array $result): void
+    {
+        $output = $result['output'];
+
+        if ($output === '') {
+            return;
+        }
+
+        $this->newLine();
+        $this->components->warn('Test diagnostics');
+
+        $suites = $this->groupFailingTestsBySuite($output);
+
+        if ($suites !== []) {
+            $this->line('  Failing areas:');
+            foreach ($suites as $suite => $files) {
+                $this->line("    <comment>{$suite}</comment> (".count($files).' file(s))');
+                foreach (array_slice($files, 0, 5) as $file) {
+                    $this->line("      - {$file}");
+                }
+                if (count($files) > 5) {
+                    $this->line('      - ... and '.(count($files) - 5).' more');
+                }
+            }
+        }
+
+        $suggestions = $this->buildTestSuggestions($result, $suites);
+
+        if ($suggestions !== []) {
+            $this->newLine();
+            $this->line('  Suggestions:');
+            foreach ($suggestions as $suggestion) {
+                $this->line("    • {$suggestion}");
+            }
+        }
+    }
+
+    /**
+     * @return array<string, list<string>>
+     */
+    private function groupFailingTestsBySuite(string $output): array
+    {
+        preg_match_all('/(?:tests\/[^\s:]+\.php|Tests\\\\[^\s:]+(?:Test|\.php))/i', $output, $matches);
+
+        $files = [];
+        foreach ($matches[0] as $match) {
+            $normalized = str_replace('\\', '/', $match);
+            if (! str_ends_with(strtolower($normalized), '.php')) {
+                $normalized = str_replace('Tests/', 'tests/', $normalized);
+                if (! str_contains($normalized, '/')) {
+                    $normalized = 'tests/Feature/'.$normalized;
+                }
+                if (! str_ends_with(strtolower($normalized), '.php')) {
+                    $normalized .= '.php';
+                }
+            }
+            $files[$normalized] = true;
+        }
+
+        $suites = [];
+        foreach (array_keys($files) as $file) {
+            $suite = $this->resolveTestSuiteLabel($file);
+            $suites[$suite][] = $file;
+        }
+
+        foreach ($suites as $suite => $suiteFiles) {
+            sort($suites[$suite]);
+        }
+
+        ksort($suites);
+
+        return $suites;
+    }
+
+    private function resolveTestSuiteLabel(string $file): string
+    {
+        if (preg_match('#(?:^|/)(packages/[^/]+/tests)#', $file, $match)) {
+            return $match[1];
+        }
+
+        if (preg_match('#tests/(Feature|Unit|Browser)(?:/|$)#i', $file, $match)) {
+            return 'tests/'.$match[1];
+        }
+
+        if (preg_match('#^(tests/[^/]+)#', $file, $match)) {
+            return $match[1];
+        }
+
+        return 'tests';
+    }
+
+    /**
+     * @param  array<string, list<string>>  $suites
+     * @return list<string>
+     */
+    private function buildTestSuggestions(array $result, array $suites): array
+    {
+        $suggestions = [];
+        $output = $result['output'];
+        $memoryFailure = $this->isMemoryFailure($output);
+        $cpuCount = $this->cpuCount();
+
+        if ($memoryFailure) {
+            if ($result['parallel']) {
+                $estimatedRam = $cpuCount * 1024;
+                $suggestions[] = "Parallel uses ~512M–1G RAM per worker ({$cpuCount} cores ≈ {$estimatedRam}MB+ total). Sequential avoids multiplying memory: php -d memory_limit=1G artisan test --compact --no-coverage";
+                $suggestions[] = 'If you need parallel speed, cap workers: php -d memory_limit=512M artisan test --compact --parallel --processes=2 --no-coverage';
+            } else {
+                $suggestions[] = 'Sequential run still OOM — raise limit in phpunit.xml: <ini name="memory_limit" value="512M"/> or run php -d memory_limit=2G artisan test --compact --no-coverage';
+                $suggestions[] = 'Set memory_limit in phpunit.xml so every agent/tooling path picks it up without -d flags';
+            }
+        } elseif ($result['parallel'] && ! $result['retried_sequential']) {
+            $suggestions[] = 'Parallel failed — retry sequential (default): php -d memory_limit=1G artisan test --compact --no-coverage';
+        }
+
+        if ($suites !== []) {
+            $heaviestSuite = array_key_first($suites);
+            $firstFile = $suites[$heaviestSuite][0] ?? null;
+            if ($firstFile !== null) {
+                $suggestions[] = "Isolate the heaviest area first: php -d memory_limit=1G artisan test --compact {$firstFile}";
+            }
+
+            if (count($suites) > 1) {
+                $suggestions[] = 'Run suites separately to find the slow/heavy one: php artisan test --compact tests/Feature then tests/Unit';
+            }
+        }
+
+        if (str_contains(strtolower($output), 'paratest')) {
+            $suggestions[] = 'Ensure brianium/paratest is installed, or skip parallel entirely (git:push default)';
+        }
+
+        $suggestions[] = 'Preflight default is sequential for reliability; pass --parallel to git:push only when the host has spare RAM';
+
+        return array_values(array_unique($suggestions));
+    }
+
+    private function cpuCount(): int
+    {
+        $count = (int) trim((string) shell_exec('nproc 2>/dev/null'));
+
+        return $count > 0 ? $count : 4;
     }
 
     private function runPassthru(string $command): int

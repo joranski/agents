@@ -66,13 +66,14 @@ pint (code style) → test suite → stage files → commit → push
 ```
 
 ```bash
-php artisan git:push                   # Full pipeline (Pint + tests use --parallel by default)
+php artisan git:push                   # Pint (--parallel) + sequential tests + interactive stage/commit/push
 php artisan git:push --skip-tests      # Skip test suite
 php artisan git:push --skip-pint       # Skip code formatting
-php artisan git:push --no-parallel     # Disable parallel Pint/tests (older tooling or CI)
+php artisan git:push --parallel        # Opt-in parallel tests (needs ~512M RAM per CPU core)
+php artisan git:push --no-parallel     # Disable parallel Pint
 ```
 
-Tests run in a **clean environment** (`env -i`) so inherited `.env` values (e.g. `DB_CONNECTION`) do not override `phpunit.xml`. The suite uses `php -d memory_limit=1G artisan test --compact --parallel --no-coverage` for fast preflight — parallel ParaTest execution, no coverage collection (use CI for coverage reports).
+Tests run in a **clean environment** (`env -i`) so inherited `.env` values (e.g. `DB_CONNECTION`) do not override `phpunit.xml`. The suite runs **sequentially** by default: `php -d memory_limit=1G artisan test --compact --no-coverage`. Parallel is opt-in via `--parallel` because each worker multiplies RAM usage. On failure, diagnostics group errors by test suite and suggest sequential retry, worker caps, or isolated file runs.
 
 ### `php artisan agents:install`
 
