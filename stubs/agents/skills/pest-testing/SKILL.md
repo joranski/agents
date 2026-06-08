@@ -11,179 +11,47 @@ metadata:
 
 # Pest Testing 4
 
-## Documentation
+Use `search-docs` for detailed Pest 4 patterns.
 
-Use `search-docs` for detailed Pest 4 patterns and documentation.
+## Creating tests
 
-## Basic Usage
+Use `php artisan make:test --pest {name}`. Do NOT prefix `Feature/` or `Unit/` in `{name}` — the flag handles the directory.
 
-### Creating Tests
+## Organization
 
-All tests must be written using Pest. Use `php artisan make:test --pest {name}`.
+- Feature/Unit: `tests/Feature`, `tests/Unit`
+- Browser: `tests/Browser/`
+- Do NOT remove tests without approval
 
-The `{name}` argument should include only the path and test name, but should not include the test suite.
-- Incorrect: `php artisan make:test --pest Feature/SomeFeatureTest` will generate `tests/Feature/Feature/SomeFeatureTest.php`
-- Correct: `php artisan make:test --pest SomeControllerTest` will generate `tests/Feature/SomeControllerTest.php`
-- Incorrect: `php artisan make:test --pest --unit Unit/SomeServiceTest` will generate `tests/Unit/Unit/SomeServiceTest.php`
-- Correct: `php artisan make:test --pest --unit SomeServiceTest` will generate `tests/Unit/SomeServiceTest.php`
+## Conventions
 
-### Test Organization
+- Match existing `test()` vs `it()` style in the same directory
+- Use specific assertions: `assertSuccessful()` not `assertStatus(200)`
+- Import mocks: `use function Pest\Laravel\mock;`
+- Use datasets for repetitive validation tests
+- Browser tests: `assertNoJavaScriptErrors()`, `RefreshDatabase`, factories
 
-- Unit/Feature tests: `tests/Feature` and `tests/Unit` directories.
-- Browser tests: `tests/Browser/` directory.
-- Do NOT remove tests without approval - these are core application code.
+## Running tests
 
-### Basic Test Structure
+Full suite: sequential, 1G memory, no coverage. Parallel is opt-in. See `.agents/skills/_shared/test-runner.md`.
 
-Pest supports both `test()` and `it()` functions. Before writing new tests, check existing test files in the same directory to match the project's convention. Use `test()` if existing tests use `test()`, or `it()` if they use `it()`.
+Targeted runs: `--filter` or single file — never `--parallel`.
 
-<!-- Basic Pest Test Example -->
-```php
-it('is true', function () {
-    expect(true)->toBeTrue();
-});
-```
-
-### Running Tests
-
-Use a **1G memory limit** for sequential full-suite runs. PHP only raises the limit when the server allows it (`php -d memory_limit=1G` or `phpunit.xml` below).
-
-**Full suite (default — reliable):** sequential, no coverage. One PHP process at 1G avoids the RAM multiplication that makes `--parallel` OOM on typical dev machines.
-
-- Run all tests: `php -d memory_limit=1G artisan test --compact --no-coverage`.
-- Package/library full suite: `php -d memory_limit=1G vendor/bin/pest --compact --no-coverage`.
-- In `git:push` / clean env: `env -i PATH=$PATH HOME=$HOME php -d memory_limit=1G artisan test --compact --no-coverage`.
-
-**Parallel (opt-in — faster wall-clock, higher RAM):** only when the host has ~512M+ free RAM **per CPU core**. Cap workers — do not use 1G per worker on many cores.
-
-- `php -d memory_limit=512M artisan test --compact --parallel --processes=2 --no-coverage`
-- If parallel OOMs → fall back to sequential (above). Raising to 2G per worker usually makes things *slower* (swap), not faster.
-
-**When tests fail with memory errors — diagnose:**
-1. Check if `--parallel` was used; retry sequential first
-2. Group failures by suite (`tests/Feature`, `tests/Unit`, `tests/Browser`)
-3. Run heavy files alone: `php artisan test --compact tests/Feature/HeavyTest.php`
-4. Persist limit in `phpunit.xml`: `<php><ini name="memory_limit" value="512M"/></php>`
-
-**Targeted runs (never `--parallel`):** process startup makes parallel slower for one file or filter.
-
-- Run minimal tests with filter: `php -d memory_limit=1G artisan test --compact --filter=testName`.
-- Run one file: `php -d memory_limit=1G artisan test --compact tests/Feature/ExampleTest.php`.
-
-## Assertions
-
-Use specific assertions (`assertSuccessful()`, `assertNotFound()`) instead of `assertStatus()`:
-
-<!-- Pest Response Assertion -->
-```php
-it('returns all', function () {
-    $this->postJson('/api/docs', [])->assertSuccessful();
-});
-```
-
-| Use | Instead of |
-|-----|------------|
-| `assertSuccessful()` | `assertStatus(200)` |
-| `assertNotFound()` | `assertStatus(404)` |
-| `assertForbidden()` | `assertStatus(403)` |
-
-## Mocking
-
-Import mock function before use: `use function Pest\Laravel\mock;`
-
-## Datasets
-
-Use datasets for repetitive tests (validation rules, etc.):
-
-<!-- Pest Dataset Example -->
-```php
-it('has emails', function (string $email) {
-    expect($email)->not->toBeEmpty();
-})->with([
-    'james' => 'james@laravel.com',
-    'taylor' => 'taylor@laravel.com',
-]);
-```
-
-## Pest 4 Features
+## Pest 4 features
 
 | Feature | Purpose |
 |---------|---------|
-| Browser Testing | Full integration tests in real browsers |
-| Smoke Testing | Validate multiple pages quickly |
-| Visual Regression | Compare screenshots for visual changes |
+| Browser Testing | Real browser integration tests |
+| Smoke Testing | Validate multiple pages for JS errors |
+| Architecture Testing | Enforce code conventions (`arch()`) |
+| Visual Regression | Screenshot comparison |
 | Test Sharding | Parallel CI runs |
-| Architecture Testing | Enforce code conventions |
 
-### Browser Test Example
+Code examples: `.agents/skills/pest-testing/examples.md`
 
-Browser tests run in real browsers for full integration testing:
+## Common pitfalls
 
-- Browser tests live in `tests/Browser/`.
-- Use Laravel features like `Event::fake()`, `assertAuthenticated()`, and model factories.
-- Use `RefreshDatabase` for clean state per test.
-- Interact with page: click, type, scroll, select, submit, drag-and-drop, touch gestures.
-- Test on multiple browsers (Chrome, Firefox, Safari) if requested.
-- Test on different devices/viewports (iPhone 14 Pro, tablets) if requested.
-- Switch color schemes (light/dark mode) when appropriate.
-- Take screenshots or pause tests for debugging.
-
-<!-- Pest Browser Test Example -->
-```php
-it('may reset the password', function () {
-    Notification::fake();
-
-    $this->actingAs(User::factory()->create());
-
-    $page = visit('/sign-in');
-
-    $page->assertSee('Sign In')
-        ->assertNoJavaScriptErrors()
-        ->click('Forgot Password?')
-        ->fill('email', 'nuno@laravel.com')
-        ->click('Send Reset Link')
-        ->assertSee('We have emailed your password reset link!');
-
-    Notification::assertSent(ResetPassword::class);
-});
-```
-
-### Smoke Testing
-
-Quickly validate multiple pages have no JavaScript errors:
-
-<!-- Pest Smoke Testing Example -->
-```php
-$pages = visit(['/', '/about', '/contact']);
-
-$pages->assertNoJavaScriptErrors()->assertNoConsoleLogs();
-```
-
-### Visual Regression Testing
-
-Capture and compare screenshots to detect visual changes.
-
-### Test Sharding
-
-Split tests across parallel processes for faster CI runs.
-
-### Architecture Testing
-
-Pest 4 includes architecture testing (from Pest 3):
-
-<!-- Architecture Test Example -->
-```php
-arch('controllers')
-    ->expect('App\Http\Controllers')
-    ->toExtendNothing()
-    ->toHaveSuffix('Controller');
-```
-
-## Common Pitfalls
-
-- Not importing `use function Pest\Laravel\mock;` before using mock
-- Using `assertStatus(200)` instead of `assertSuccessful()`
-- Forgetting datasets for repetitive validation tests
+- Not importing `Pest\Laravel\mock` before use
+- `assertStatus(200)` instead of `assertSuccessful()`
 - Deleting tests without approval
-- Forgetting `assertNoJavaScriptErrors()` in browser tests
-- Prefixing `Feature/` or `Unit/` in `{name}` when using `make:test`
+- Prefixing `Feature/` in `make:test --pest` name

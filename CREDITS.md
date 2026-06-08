@@ -11,16 +11,13 @@ The following workflow skills are derived from or inspired by Jesse Vincent's [S
 - `writing-skills`
 - `executing-plans`
 - `single-flow-task-execution`
-- `using-superpowers`
 - `using-git-worktrees`
 - `systematic-debugging`
 - `test-driven-development`
 - `verification-before-completion`
-- `requesting-code-review`
-- `receiving-code-review`
+- `code-review`
 - `removing-dead-files`
 - `finishing-a-development-branch`
-- `blueprint-code-review`
 - `git-push`
 
 These skills retain Superpowers' core philosophy — pressure-resistant language, anti-pattern sections, RED-GREEN-REFACTOR mapping, and bulletproofed checklists — adapted for Laravel + PHP workflows and tool-agnostic execution. License: MIT (Superpowers).

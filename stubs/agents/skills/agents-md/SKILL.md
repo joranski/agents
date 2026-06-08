@@ -149,7 +149,7 @@ When you find any of these, fix them in the same session.
 
 ## Integration
 
-- **Called by:** `brainstorming` (when starting on a project that has no `AGENTS.md`); `using-superpowers` (when the agent notices the `AGENTS.md` is stale)
+- **Called by:** `brainstorming` (when starting on a project that has no `AGENTS.md`); any skill whose task reveals stale or missing `AGENTS.md`
 - **Calls:** None directly — but uses information from `composer.json`, `package.json`, lock files, and the existing skill catalog
 - **Hand-off:** After generating, agents should re-read the new `AGENTS.md` before continuing the original task
 

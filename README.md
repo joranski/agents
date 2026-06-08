@@ -66,14 +66,15 @@ pint (code style) → test suite → stage files → commit → push
 ```
 
 ```bash
-php artisan git:push                   # Pint (--parallel) + sequential tests + interactive stage/commit/push
+php artisan git:push                   # Pint (--parallel) + smart test skip + interactive stage/commit/push
 php artisan git:push --skip-tests      # Skip test suite
+php artisan git:push --force-tests     # Run tests even for doc-only changes
 php artisan git:push --skip-pint       # Skip code formatting
 php artisan git:push --parallel        # Opt-in parallel tests (needs ~512M RAM per CPU core)
 php artisan git:push --no-parallel     # Disable parallel Pint
 ```
 
-Tests run in a **clean environment** (`env -i`) so inherited `.env` values (e.g. `DB_CONNECTION`) do not override `phpunit.xml`. The suite runs **sequentially** by default: `php -d memory_limit=1G artisan test --compact --no-coverage`. Parallel is opt-in via `--parallel` because each worker multiplies RAM usage. On failure, diagnostics group errors by test suite and suggest sequential retry, worker caps, or isolated file runs.
+Tests auto-skip when local changes are not PHP-relevant (docs, CSS, assets). They run when `.php` files, `composer.lock`, `config/`, `routes/`, or migrations change. Tests run in a **clean environment** (`env -i`) so inherited `.env` values (e.g. `DB_CONNECTION`) do not override `phpunit.xml`. The suite runs **sequentially** by default: `php -d memory_limit=1G artisan test --compact --no-coverage`. Parallel is opt-in via `--parallel` because each worker multiplies RAM usage. On failure, diagnostics group errors by test suite and suggest sequential retry, worker caps, or isolated file runs.
 
 ### `php artisan agents:install`
 
@@ -184,15 +185,12 @@ Requires: `ANTHROPIC_API_KEY` in `.env`, `gh` CLI authenticated, clean git worki
 | `verification-before-completion` | Evidence before claims — no shortcuts |
 | `systematic-debugging` | Root-cause analysis before proposing fixes |
 | `test-driven-development` | Red-green-refactor discipline |
-| `requesting-code-review` | Pre-merge structured review |
-| `receiving-code-review` | Technical rigor on feedback, no performative agreement |
+| `code-review` | Pre-merge review, feedback reception, Filament Blueprint audit |
 | `removing-dead-files` | Safe dead code removal (proof of death required) |
-| `blueprint-code-review` | Filament v5 Blueprint standards audit |
 
 ### Architecture & meta
 | Skill | Purpose |
 |-------|---------|
-| `using-superpowers` | Meta-skill: how to find and use skills |
 | `writing-skills` | Creating new skills with TDD |
 | `agents-md` | Generate and maintain `AGENTS.md` files (bundled, defers to `getsentry/skills`) |
 | `package-extraction-scout` | Identify mature services that should become standalone Composer packages |
@@ -257,7 +255,9 @@ For local dev: use `php artisan migrate`, `composer install`, etc. directly. `gi
 
 ### Skills you bundle execute on your machine
 
-When you `agents:install`, 25 skill files are written to `.agents/skills/` and become readable by any AI agent you point at the project. Skills cannot execute code on their own, but they can instruct an agent to run shell commands. Only install this package in projects you trust to run agent-generated code.
+When you `agents:install`, 23 skill files are written to `.agents/skills/` and become readable by any AI agent you point at the project. Skills cannot execute code on their own, but they can instruct an agent to run shell commands. Only install this package in projects you trust to run agent-generated code.
+
+**Reducing context bloat:** If you previously installed `using-superpowers`, delete `.agents/skills/using-superpowers/` locally — it forced meta-documentation into every turn. Re-run `php artisan agents:install` to pick up consolidated skills; use `--force` only when you want to overwrite your local edits.
 
 ## Migrating from local commands
 

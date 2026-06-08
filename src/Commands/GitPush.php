@@ -10,6 +10,7 @@ class GitPush extends Command
 {
     protected $signature = 'git:push
                             {--skip-tests : Skip running the test suite}
+                            {--force-tests : Run the test suite even when no PHP-relevant files changed}
                             {--skip-pint : Skip code style fixing}
                             {--parallel : Run tests in parallel (needs ~512M RAM per CPU core; default is sequential)}
                             {--no-parallel : Disable parallel execution for Pint}';
@@ -83,20 +84,31 @@ class GitPush extends Command
 
         // 1d. Tests
         if (! $this->option('skip-tests')) {
-            $this->newLine();
-            $mode = $useTestParallel ? 'parallel' : 'sequential';
-            $this->components->info("Running test suite ({$mode})...");
+            $changedFiles = $this->collectChangedFiles();
+            $shouldRunTests = $this->option('force-tests')
+                || ($changedFiles !== [] && $this->hasPhpRelevantChanges($changedFiles));
 
-            $result = $this->runTestSuite($useTestParallel);
+            if (! $shouldRunTests) {
+                $reason = $changedFiles === []
+                    ? 'no local changes detected'
+                    : 'no PHP-relevant changes: '.$this->formatChangedFileSummary($changedFiles);
+                $this->line("  <fg=gray>skip</> Tests ({$reason})");
+            } else {
+                $this->newLine();
+                $mode = $useTestParallel ? 'parallel' : 'sequential';
+                $this->components->info("Running test suite ({$mode})...");
 
-            if ($result['exit'] !== 0) {
-                $this->components->error('Tests failed! Fix them before pushing.');
-                $this->printTestDiagnostics($result);
+                $result = $this->runTestSuite($useTestParallel);
 
-                return self::FAILURE;
+                if ($result['exit'] !== 0) {
+                    $this->components->error('Tests failed! Fix them before pushing.');
+                    $this->printTestDiagnostics($result);
+
+                    return self::FAILURE;
+                }
+
+                $this->line('  OK All tests passed');
             }
-
-            $this->line('  OK All tests passed');
         }
 
         $this->newLine();
@@ -443,5 +455,78 @@ class GitPush extends Command
         passthru($command, $exitCode);
 
         return $exitCode;
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function collectChangedFiles(): array
+    {
+        $sources = [
+            trim(shell_exec('git diff --name-only') ?? ''),
+            trim(shell_exec('git diff --cached --name-only') ?? ''),
+            trim(shell_exec('git ls-files --others --exclude-standard') ?? ''),
+        ];
+
+        $files = [];
+        foreach ($sources as $output) {
+            if ($output === '') {
+                continue;
+            }
+
+            foreach (explode("\n", $output) as $file) {
+                $file = trim($file);
+                if ($file !== '') {
+                    $files[$file] = true;
+                }
+            }
+        }
+
+        return array_keys($files);
+    }
+
+    /**
+     * @param  list<string>  $files
+     */
+    private function hasPhpRelevantChanges(array $files): bool
+    {
+        foreach ($files as $file) {
+            if ($this->isPhpRelevantChange($file)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private function isPhpRelevantChange(string $path): bool
+    {
+        if (str_ends_with(strtolower($path), '.php')) {
+            return true;
+        }
+
+        if (in_array($path, ['composer.json', 'composer.lock', 'phpunit.xml', 'pest.php'], true)) {
+            return true;
+        }
+
+        return str_starts_with($path, 'config/')
+            || str_starts_with($path, 'routes/')
+            || str_starts_with($path, 'database/migrations/');
+    }
+
+    /**
+     * @param  list<string>  $files
+     */
+    private function formatChangedFileSummary(array $files): string
+    {
+        sort($files);
+
+        if (count($files) <= 3) {
+            return implode(', ', $files);
+        }
+
+        $shown = array_slice($files, 0, 3);
+
+        return implode(', ', $shown).' (+'.(count($files) - 3).' more)';
     }
 }

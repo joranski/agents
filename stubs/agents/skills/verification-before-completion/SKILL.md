@@ -34,7 +34,7 @@ BEFORE claiming any status or expressing satisfaction:
 4. VERIFY: Does output confirm the claim?
    - If NO: State actual status with evidence
    - If YES: State claim WITH evidence
-5. FILAMENT AUDIT: If you modified UI/Filament code, run `.agents/skills/blueprint-code-review/SKILL.md`.
+5. FILAMENT AUDIT: If you modified UI/Filament code, run the Filament Blueprint section of `.agents/skills/code-review/SKILL.md`.
 6. ONLY THEN: Make the claim
 
 Skip any step = lying, not verifying
@@ -126,7 +126,7 @@ From 24 failure memories:
 - Committing, PR creation, task completion
 - Moving to next task
 - Delegating to agents
-- **IMPORTANT:** If any Filament or UI code was created or modified, you MUST run `.agents/skills/blueprint-code-review/SKILL.md` before proceeding.
+- **IMPORTANT:** If any Filament or UI code was created or modified, you MUST run the Filament Blueprint section of `.agents/skills/code-review/SKILL.md` before proceeding.
 
 **Rule applies to:**
 - Exact phrases

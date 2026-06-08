@@ -365,7 +365,7 @@ Before claiming all work is done:
 
 - **using-git-worktrees** — Set up isolated workspace before starting
 - **writing-plans** — Creates the plan this skill executes
-- **requesting-code-review** — Code review template for quality reviews
+- **code-review** — Code review template for quality reviews
 - **finishing-a-development-branch** — Complete development after all tasks
 
 **Should also use:**

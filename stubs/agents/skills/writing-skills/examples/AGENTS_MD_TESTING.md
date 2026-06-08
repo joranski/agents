@@ -94,7 +94,7 @@ is at `~/.gemini/skills/`.
 Browse categories: `ls ~/.gemini/skills/`
 Search: `grep -r "keyword" ~/.gemini/skills/ --include="SKILL.md"`
 
-Instructions: `.agents/skills/using-superpowers/SKILL.md`
+Instructions: Read `.agents/skills/<name>/SKILL.md` when the skill `description` matches your task
 </available_skills>
 
 <important_info_about_skills>
@@ -129,7 +129,7 @@ Your workflow for every task:
 The skills library prevents you from repeating common mistakes.
 Not checking before you start is choosing to repeat those mistakes.
 
-Start here: `.agents/skills/using-superpowers/SKILL.md`
+Start here: Check skill `description` frontmatter in `.agents/skills/` and read matching skills before acting
 ```
 
 ## Testing Protocol
