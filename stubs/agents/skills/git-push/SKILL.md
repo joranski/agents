@@ -1,6 +1,6 @@
 ---
 name: git-push
-description: Use when the user says "push", "commit", "git push", "deploy to git", or wants to send their code to origin — runs preflight (format + tests when available), generates commit message from diff, stages, commits, and pushes. Works on any git repo; adapts to Laravel, plain PHP, or git-only projects.
+description: Use when the user says "push", "commit", "git push", "deploy to git", or wants to send their code to origin — runs preflight (format + tests when available), generates commit message from diff with Agent Attribution, stages, commits, and pushes. Works on any git repo; adapts to Laravel, polyglot, or git-only projects.
 source: joranski/agents
 canonical: true
 ---
@@ -10,47 +10,30 @@ canonical: true
 Push code to origin with preflight checks and **agent-generated commit messages**.
 
 **Core principle:** The agent writes the commit message from the diff — humans shouldn't describe what the code already says.
-
 **Announce at start:** "I'm using the git-push skill to push your changes."
 
-## Stack detection
+## Preflight & Stack Detection
+- Stack detection: runs only applicable steps (Pint, PHP tests, or polyglot scoped runners).
+- **Test-runner details:** See `.agents/skills/_shared/test-runner.md`.
 
-Only run steps that exist — never fail because `artisan` or `pint` is missing.
+## Test Skipping (PHP & Polyglot)
+- No local changes → skip tests.
+- Non-PHP changes only (docs, CSS, assets, Rust `*.rs`, Python `*.py`, JS/TS `*.ts`) → auto-skip PHP tests. Run scoped runner for polyglot languages if applicable.
+- Any `.php`, `composer.lock`, `config/`, `routes/`, `database/migrations/`, `phpunit.xml`, `pest.php` → **run PHP test suite**.
+- Flags: `--force-tests` to override auto-skip; `--skip-tests` to bypass.
 
-| Signal | Enables |
-|---|---|
-| `git rev-parse --git-dir` | Entire skill (required) |
-| `artisan` exists | `migrate:status`, `php artisan test` |
-| `vendor/bin/pint` | Code formatting |
-| `vendor/bin/pest` / `phpunit` | Tests when no `artisan` |
-
-**Test runner priority:** `php artisan test` → `vendor/bin/pest` → `vendor/bin/phpunit` → warn and ask.
+## Agent Attribution Rule
+Every automated commit/PR created by an agent MUST include the attribution trailer:
+```
+Signed-off-by: [Agent/Model] on behalf of @joranski
+```
+Example: `Signed-off-by: Claude 3.7 Sonnet on behalf of @joranski`
 
 ## Process
+1. **Preflight** — branch, migrations, Pint (`--dirty`), tests.
+2. **Analyze** — `git status`, `git diff`, `git diff --cached`.
+3. **Generate message** — `<type>: <summary>`, body bullets, and `Signed-off-by:` trailer.
+4. **Present** — display message and ask user approval.
+5. **Stage, commit, push** — execute upon approval.
 
-1. **Preflight** — branch, migrations (Laravel), Pint (`--dirty`), tests. Stop on test failure.
-2. **Analyze** — `git status`, `git diff`, `git diff --cached` for commit message context.
-3. **Generate message** — `<type>: <summary>` + body bullets grouped by purpose (not filename).
-4. **Present** — show message; ask approval. Do NOT ask the user to write it.
-5. **Stage, commit, push** — on approval. Rebase + re-test if push rejected.
-
-Commands, message format, and flags: `.agents/skills/git-push/examples.md`
-
-## Test skipping
-
-Skip the full suite when local changes are **not PHP-relevant** (docs, CSS, images, etc.):
-
-- No local changes → skip
-- Only non-PHP paths (`.md`, `.json` config docs, assets) → skip
-- Any `.php`, `composer.lock`, `config/`, `routes/`, `database/migrations/`, `phpunit.xml`, `pest.php` → **run tests**
-
-Use `--force-tests` to override. Use `--skip-tests` to never run.
-
-`php artisan git:push` applies this automatically. Test-runner details: `.agents/skills/_shared/test-runner.md`
-
-## Common mistakes
-
-- Asking the user to write the commit message — generate it yourself
-- Running Laravel-only commands on non-Laravel repos
-- Defaulting to `--parallel` for full-suite preflight — sequential by default
-- One-liner messages for 3+ file changes — use body bullets
+See `.agents/skills/git-push/examples.md` for exact message formatting and flags.

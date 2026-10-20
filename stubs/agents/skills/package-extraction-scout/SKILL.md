@@ -52,7 +52,7 @@ If ANY of these are true, **do not flag the class** even if it scores 6/6:
 
 - Modified within last 14 days (still in flux — extraction = double-commit pain)
 - Depends on `App\Models\*` (Eloquent models = app-specific, not portable)
-- Has a Filament Resource, Livewire component, or Volt component co-located (UI binding = belongs in app)
+- Has a Livewire component or Volt component co-located (UI binding = belongs in app)
 - Tied to a specific database schema controlled by the host app
 - Has < 3 callers (extraction overhead exceeds benefit)
 - The candidate is a job, listener, or mailable (these are framework glue, not libraries)
@@ -89,7 +89,7 @@ digraph package_scout {
 
 ### Step 1: Pick Scope
 
-Default scope: `app/Services/`, `app/Support/`, `app/Integrations/`. Skip `app/Models/`, `app/Http/`, `app/Filament/`, `app/Livewire/`, `app/Console/Commands/`, `app/Jobs/`, `app/Listeners/`, `app/Mail/`, `app/Notifications/`.
+Default scope: `app/Services/`, `app/Support/`, `app/Integrations/`. Skip `app/Models/`, `app/Http/`, `app/Livewire/`, `app/Console/Commands/`, `app/Jobs/`, `app/Listeners/`, `app/Mail/`, `app/Notifications/`.
 
 User can override with a specific path or namespace.
 
@@ -244,7 +244,7 @@ This is NOT this skill's job. This skill stops at the memo.
 
 - About to delete or move the candidate file → STOP. This skill annotates only.
 - About to edit `composer.json` → STOP. Extraction is a separate project.
-- Recommending extraction of a Filament/Livewire/Volt class → STOP. UI bindings disqualify.
+- Recommending extraction of a Livewire/Volt class → STOP. UI bindings disqualify.
 - Recommending extraction of an Eloquent model → STOP. Models are app-specific.
 - Score = 6/6 but candidate was modified 3 days ago → STOP. Negative constraint wins.
 

@@ -1,44 +1,90 @@
-# Laravel / Pest Test Runner Reference
+# Polyglot Test Runner & Surgical Iteration Reference
 
-Use when running full-suite preflight (`git:push`, push skill) or troubleshooting memory/parallel failures.
+Use for iterative testing during development and full-suite preflight (`git:push`).
 
-## Full suite (default — reliable)
+## Iron Law: Surgical Testing During Iteration
+**Forbid running the full test suite mid-loop on large projects.**
+During active implementation, run **ONLY** the targeted test file or dirty diff with `--stop-on-failure` / `--bail`. Pipe or filter output so passing test logs never bloat LLM context. Full-suite runs are reserved strictly for preflight before commit/push.
 
-Sequential, no coverage. One PHP process at 1G avoids RAM multiplication from `--parallel`.
+---
 
+## 1. PHP / Pest / Laravel
+
+### Surgical Iteration (Dirty & Targeted)
 ```bash
-# Laravel (clean env — strips inherited DB_CONNECTION etc.)
-env -i PATH=$PATH HOME=$HOME php -d memory_limit=1G artisan test --compact --no-coverage
+# Pest dirty diff (only tests related to changed files)
+vendor/bin/pest --dirty --stop-on-failure --compact
+
+# Targeted single file or filter
+php -d memory_limit=1G artisan test --compact --bail tests/Feature/SpecificTest.php
+php -d memory_limit=1G artisan test --compact --filter=testMethodName
 
 # Plain PHP (no artisan)
-php -d memory_limit=1G vendor/bin/pest --compact --no-coverage
-php -d memory_limit=1G vendor/bin/phpunit
+php -d memory_limit=1G vendor/bin/pest --stop-on-failure tests/Feature/SpecificTest.php
 ```
 
-## Parallel (opt-in)
+### Full Suite Preflight (Sequential — Reliable)
+Sequential execution at 1G memory avoids RAM multiplication from `--parallel`.
+```bash
+# Clean environment strips inherited DB_CONNECTION etc.
+env -i PATH=$PATH HOME=$HOME php -d memory_limit=1G artisan test --compact --no-coverage
 
-Only when host has ~512M+ free RAM **per CPU core**. Cap workers — do not use 1G per worker on many cores.
+# Direct runner
+php -d memory_limit=1G vendor/bin/pest --compact --no-coverage
+```
 
+### Opt-In Parallel Preflight
+Only when host has 512MB+ free RAM per CPU core:
 ```bash
 env -i PATH=$PATH HOME=$HOME php -d memory_limit=512M artisan test --compact --parallel --processes=2 --no-coverage
 ```
 
-If parallel OOMs → fall back to sequential. Raising to 2G per worker usually makes things slower (swap), not faster.
+---
 
-## Targeted runs (never `--parallel`)
+## 2. JavaScript / TypeScript / Mobile (React Native, Node, Web)
 
+### Surgical Iteration
 ```bash
-php -d memory_limit=1G artisan test --compact --filter=testName
-php -d memory_limit=1G artisan test --compact tests/Feature/ExampleTest.php
+# Vitest (bail on first failure, targeted file)
+npx vitest run path/to/file.test.ts --bail=1
+
+# Jest (only changed files or single path)
+npx jest --onlyChanged --bail
+npx jest path/to/file.test.ts --bail
+
+# React Native / Detox / Maestro
+npx maestro test .maestro/flow-under-test.yaml
 ```
 
-## When tests fail with memory errors
+---
 
-1. Check if `--parallel` was used; retry sequential first
-2. Group failures by suite (`tests/Feature`, `tests/Unit`, `tests/Browser`)
-3. Run heavy files alone: `php artisan test --compact tests/Feature/HeavyTest.php`
-4. Persist limit in `phpunit.xml`: `<php><ini name="memory_limit" value="512M"/></php>`
+## 3. Rust (Systems, CLI, Hot-Path FFI)
 
-## Why `env -i` for `artisan test`?
+### Surgical Iteration
+```bash
+# Run specific test by exact name with immediate abort
+cargo test test_name -- --exact --nocapture
 
-Parent artisan can leak env vars (`DB_CONNECTION`, `APP_ENV`) that override `phpunit.xml`. Not needed for direct `vendor/bin/pest`.
+# Run tests in a specific package/file
+cargo test -p my_crate --test integration_test -- --nocapture
+```
+
+---
+
+## 4. Python (AI/ML, Microservices, Scripts)
+
+### Surgical Iteration
+```bash
+# Pytest (stop on first failure, single file)
+pytest tests/test_feature.py -x -q
+
+# By keyword filter
+pytest -k "test_method" -x -q
+```
+
+---
+
+## Troubleshooting Memory & Failures
+1. If parallel runs OOM: fall back to sequential immediately.
+2. Group failures by suite/subsystem; run isolated heavy files individually.
+3. Suppress passing clutter: use `--compact`, `-q`, or pipe `2>&1 | tail -n 25`.

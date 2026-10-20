@@ -29,12 +29,14 @@ If you haven't run the verification command in this message, you cannot claim it
 BEFORE claiming any status or expressing satisfaction:
 
 1. IDENTIFY: What command proves this claim?
-2. RUN: Execute the FULL command (fresh, complete)
+   - During iteration: RUN SURGICAL targeted command (dirty-diff, single file, --stop-on-failure)
+   - Before completion claim: RUN FULL verification command (fresh, complete)
+2. RUN: Execute the command (pipe or compact output so passing logs don't bloat context)
 3. READ: Full output, check exit code, count failures
 4. VERIFY: Does output confirm the claim?
    - If NO: State actual status with evidence
    - If YES: State claim WITH evidence
-5. FILAMENT AUDIT: If you modified UI/Filament code, run the Filament Blueprint section of `.agents/skills/code-review/SKILL.md`.
+5. UI AUDIT: If you modified UI code, verify it uses Livewire/Volt + FluxUI + Tailwind CSS (Zero FilamentPHP rule) and passes interactive checks.
 6. ONLY THEN: Make the claim
 
 Skip any step = lying, not verifying
@@ -126,7 +128,7 @@ From 24 failure memories:
 - Committing, PR creation, task completion
 - Moving to next task
 - Delegating to agents
-- **IMPORTANT:** If any Filament or UI code was created or modified, you MUST run the Filament Blueprint section of `.agents/skills/code-review/SKILL.md` before proceeding.
+- **IMPORTANT:** If any UI code was created or modified, verify it follows Livewire/Volt + FluxUI + Tailwind CSS (Zero FilamentPHP) and check interactive states before proceeding.
 
 **Rule applies to:**
 - Exact phrases

@@ -65,6 +65,17 @@ arch('controllers')
     ->toHaveSuffix('Controller');
 ```
 
-## Test runner commands
+## Surgical Test Runner Commands
 
-See `.agents/skills/_shared/test-runner.md`.
+```bash
+# Surgical: run only tests affected by uncommitted changes, stop on first failure
+vendor/bin/pest --dirty --stop-on-failure --compact
+
+# Surgical: single file with bail
+php -d memory_limit=1G artisan test --compact --bail tests/Feature/UserTest.php
+
+# Surgical: single method filter
+php -d memory_limit=1G artisan test --compact --filter=test_user_can_register
+```
+
+Full suite preflight & polyglot runners: `.agents/skills/_shared/test-runner.md`.

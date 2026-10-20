@@ -19,7 +19,7 @@ class AgentsInstall extends Command
 
     private const PACKAGE_NAME = 'joranski/agents';
 
-    private const PACKAGE_VERSION = '1.10.0';
+    private const PACKAGE_VERSION = '2.0.0';
 
     private const MANIFEST_RELATIVE_PATH = '.agents/.manifest.json';
 
@@ -414,32 +414,6 @@ class AgentsInstall extends Command
         $envPath = $projectRoot.'/.env';
         $projectName = basename($projectRoot);
 
-        // ── Filament Blueprint ──────────────────────────────────────
-        $this->components->info('Filament Blueprint (packages.filamentphp.com)');
-
-        $filamentEmail = Prompts\text(
-            label: 'Filament Blueprint email',
-            placeholder: 'your@email.com',
-            hint: 'Leave empty to skip',
-        );
-
-        if ($filamentEmail) {
-            $filamentToken = Prompts\password(
-                label: 'Filament Blueprint token',
-            );
-
-            if ($filamentToken) {
-                Process::run('composer config repositories.filament composer https://packages.filamentphp.com/composer');
-                Process::run(sprintf(
-                    'composer config --auth http-basic.packages.filamentphp.com %s %s',
-                    escapeshellarg($filamentEmail),
-                    escapeshellarg($filamentToken),
-                ));
-                $this->line('  <info>OK</info> Filament Blueprint credentials saved to auth.json');
-            }
-        }
-
-        $this->newLine();
 
         // ── Flux Pro ────────────────────────────────────────────────
         $this->components->info('Flux Pro (composer.fluxui.dev)');

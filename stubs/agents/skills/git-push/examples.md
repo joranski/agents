@@ -24,13 +24,15 @@ git diff
 git diff --cached
 ```
 
-## Commit message format
+## Commit message format (with Agent Attribution)
 
 ```
 <type>: <concise summary line in imperative mood>
 
 - <bullet describing a logical group of changes>
 - <bullet describing another group>
+
+Signed-off-by: [Agent/Model] on behalf of @joranski
 ```
 
 Types: `feat`, `fix`, `refactor`, `test`, `docs`, `chore`, `style`
@@ -44,6 +46,8 @@ feat: summary line
 
 - First change group
 - Second change group
+
+Signed-off-by: Claude 3.7 Sonnet on behalf of @joranski
 EOF
 )"
 git push origin <branch>
@@ -61,8 +65,9 @@ git push origin <branch>
 
 ```bash
 php artisan git:push                   # Pint + smart test skip + interactive stage/commit/push
+php artisan git:push --agent="Claude"  # Append Signed-off-by attribution trailer
 php artisan git:push --skip-tests      # Never run tests
-php artisan git:push --force-tests     # Run tests even for doc-only changes
+php artisan git:push --force-tests     # Run tests even for non-PHP changes
 php artisan git:push --skip-pint
 php artisan git:push --parallel        # Opt-in parallel tests
 php artisan git:push --no-parallel     # Disable parallel Pint

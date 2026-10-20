@@ -197,10 +197,6 @@ class GitPull extends Command
 
         $this->runStep('Cache: Clear', function () {
             $this->call('optimize:clear');
-
-            if ($this->getApplication()->has('filament:clear-cached-components')) {
-                $this->call('filament:clear-cached-components');
-            }
         });
 
         if (app()->environment('production')) {
@@ -208,10 +204,6 @@ class GitPull extends Command
                 system('composer dump-autoload -o');
                 $this->call('optimize');
                 $this->call('route:clear');
-
-                if ($this->getApplication()->has('filament:cache-components')) {
-                    $this->call('filament:cache-components');
-                }
             });
         } else {
             $this->runStep('Cache: Rebuild (dev)', function () {

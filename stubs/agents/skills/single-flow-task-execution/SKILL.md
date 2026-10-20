@@ -25,9 +25,13 @@ Execute plans by working through one task at a time with two-stage review after 
 
 If unsure, default to this skill.
 
-## Execution Model
+## Execution Model & Plan-Once, Execute-Cheap Protocol
 
 All work happens in a single sequential execution thread. Do not dispatch parallel coding subagents even if the runtime supports them — sequencing keeps changes auditable.
+
+**Plan-Once, Execute-Cheap ($550 -> $23) Protocol:**
+1. **Frontier Planner:** Writes a tight 5–8 step plan with an explicit **Anti-Cheat Contract** (forbidding lazy wrappers, empty mocks, or commented-out assertions).
+2. **Fast Worker Execution:** Executes tasks bite-by-bite. Copies `assets/` stubs via CLI instead of generating boilerplate token-by-token. Runs surgical tests during iteration.
 
 **Rules:**
 
@@ -35,6 +39,7 @@ All work happens in a single sequential execution thread. Do not dispatch parall
 2. **One execution thread only** — no parallel dispatch.
 3. **Track progress** by updating `<project-root>/docs/plans/task.md` at each state change (table-only tracker).
 4. **Honor the plan's Worktree Strategy header** — if the plan recommends a worktree, invoke `.agents/skills/using-git-worktrees/SKILL.md` before any code changes.
+5. **Honor the Anti-Cheat Contract** — no hollow wrappers or disabled assertions.
 
 ## When to Use
 

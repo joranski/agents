@@ -65,6 +65,11 @@ If it does NOT exist, copy the 6 base infrastructure files from this skill's `as
 | `assets/OrSpecification.php` | `app/Architecture/Support/OrSpecification.php` |
 | `assets/NotSpecification.php` | `app/Architecture/Support/NotSpecification.php` |
 
+**Polyglot Assets:**
+For TypeScript or Rust apps, copy:
+- TypeScript: `assets/Result.ts` → `src/architecture/Result.ts`
+- Rust: `assets/result.rs` → `src/architecture/result.rs`
+
 **Copy these files exactly — do NOT regenerate, paraphrase, or "improve" them.** They are version-controlled in this skill specifically so multiple invocations across multiple features in the same project produce identical infrastructure. Any deviation is a bug.
 
 After copying, verify each file:
@@ -173,7 +178,14 @@ php -d memory_limit=1G vendor/bin/pest tests/Feature/{ActionName}Test.php
 
 If either fails, debug via `systematic-debugging` — do not "fix" by loosening assertions.
 
-### Step 7: Commit Per Layer
+### Step 7: The Mandatory 50% Complexity Cut Gate
+Before committing or claiming completion, you MUST inspect your own diff:
+1. Did you create 4 classes where 2 would suffice?
+2. Are there single-use interfaces or pass-through DTOs with no transformation?
+3. Can intermediate pipeline steps be merged without losing atomic rollback?
+**Rule:** Cut over-engineered abstractions by 50%. The simplest code that satisfies the Iron Law wins.
+
+### Step 8: Commit Per Layer
 
 Two commits, not one:
 1. `feat({domain}): add {Model}State enum + {RuleName}Spec for {feature description}`

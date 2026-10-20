@@ -31,7 +31,7 @@ Before proposing deletion, you **MUST** prove the file is unused.
 
 1. **Search for exact references:** Use `grep_search` to look for the exact filename (e.g., `OldUserService.php`).
 2. **Search for class/component names:** Look for the class name, component name, or namespace (e.g., `OldUserService`, `old-user-service`).
-3. **Check for dynamic loading:** In frameworks like Laravel, files might be loaded dynamically (e.g., config files, views loaded via `view('namespace::view-name')`, Filament resources, Livewire components). Search for the string representations that would resolve to this file.
+3. **Check for dynamic loading:** In frameworks like Laravel, files might be loaded dynamically (e.g., config files, views loaded via `view('namespace::view-name')`, Livewire components, Volt components). Search for the string representations that would resolve to this file.
 
 ### Step 3: Analyze References
 

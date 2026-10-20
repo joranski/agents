@@ -81,6 +81,11 @@ If brainstorming did NOT run, decide both strategies yourself using the heuristi
 **Recommended:** <single-flow-task-execution | executing-plans>
 **Reason:** <why — see decision matrices in those skills>
 
+## Anti-Cheat Contract
+- **No hollow wrappers:** Implement concrete domain logic; no fake pass-through methods.
+- **No disabled assertions:** Never comment out failing assertions or weaken test thresholds.
+- **Copy stubs via CLI:** Instruct fast worker models to copy boilerplate from `assets/` via CLI rather than burning tokens generating boilerplate line-by-line.
+
 ---
 ```
 

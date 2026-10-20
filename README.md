@@ -1,6 +1,6 @@
 # Joranski Agents
 
-AI agent skills, smart deploy, and Night Shift automation for Laravel projects.
+AI agent skills, smart deploy, safe push, and Night Shift automation for Laravel and polyglot projects.
 
 ## Install
 
@@ -20,11 +20,11 @@ php artisan agents:install
 
 The installer will:
 
-1. **Prompt for credentials** — Filament Blueprint, Flux Pro, Anthropic API key (press Enter to skip any)
+1. **Prompt for credentials** — Flux Pro, Anthropic API key (press Enter to skip any)
 2. **Configure Supervisor** — sets `SUPERVISOR_WORKER` in `.env` for the deploy pipeline
-3. **Publish 26 AI agent skills** → `.agents/skills/` (with collision-safe upgrades — see below)
-4. **Publish agent rules** → `.agents/rules/`
-5. **Install Night Shift** → `bin/night-shift` (autonomous issue solver)
+3. **Publish 30 AI agent skills** → `.agents/skills/` (with collision-safe upgrades — see below)
+4. **Publish agent rules** → `.agents/rules/` (including the Zero FilamentPHP rule)
+5. **Install Night Shift** → `bin/night-shift` (autonomous issue solver with Brains-and-Hands Isolation)
 6. **Configure MCP** → `claude.json` + `.gemini/settings.json`
 7. **Track ownership** → `.agents/.manifest.json` (gitignored) records which files we installed
 8. **Update `.gitignore`** with agent runtime files
@@ -59,22 +59,23 @@ Reads `SUPERVISOR_WORKER` from `.env` to know which supervisor group to restart.
 
 ### `php artisan git:push`
 
-Safe push pipeline with preflight checks:
+Safe push pipeline with preflight checks and **Agent Attribution**:
 
 ```
-pint (code style) → test suite → stage files → commit → push
+pint (code style) → smart test runner → stage files → commit → push
 ```
 
 ```bash
 php artisan git:push                   # Pint (--parallel) + smart test skip + interactive stage/commit/push
+php artisan git:push --agent="Claude"  # Append Signed-off-by: [Agent] on behalf of @joranski
 php artisan git:push --skip-tests      # Skip test suite
-php artisan git:push --force-tests     # Run tests even for doc-only changes
+php artisan git:push --force-tests     # Run tests even for doc-only or non-PHP changes
 php artisan git:push --skip-pint       # Skip code formatting
 php artisan git:push --parallel        # Opt-in parallel tests (needs ~512M RAM per CPU core)
 php artisan git:push --no-parallel     # Disable parallel Pint
 ```
 
-Tests auto-skip when local changes are not PHP-relevant (docs, CSS, assets). They run when `.php` files, `composer.lock`, `config/`, `routes/`, or migrations change. Tests run in a **clean environment** (`env -i`) so inherited `.env` values (e.g. `DB_CONNECTION`) do not override `phpunit.xml`. The suite runs **sequentially** by default: `php -d memory_limit=1G artisan test --compact --no-coverage`. Parallel is opt-in via `--parallel` because each worker multiplies RAM usage. On failure, diagnostics group errors by test suite and suggest sequential retry, worker caps, or isolated file runs.
+Tests auto-skip when local changes are not PHP-relevant (docs, CSS, assets, or polyglot files like Rust/Python/Node). When polyglot files change without PHP files, a notice is displayed pointing to scoped runners in `.agents/skills/_shared/test-runner.md`. Tests run in a **clean environment** (`env -i`) so inherited `.env` values do not override `phpunit.xml`.
 
 ### `php artisan agents:install`
 
@@ -85,72 +86,12 @@ php artisan agents:install               # Install/upgrade safely (defers confli
 php artisan agents:install --setup       # Re-run credentials wizard only
 php artisan agents:install --skills      # Only install/update skills
 php artisan agents:install --force       # Also overwrite OUR skills you've edited locally
-php artisan agents:install --force-all   # DANGEROUS: overwrite EVERYTHING, including
-                                         # files owned by other packages
-```
-
-#### How collision handling works
-
-Each skill carries `source:` and `canonical:` fields in its YAML frontmatter so the installer can tell who authored which file. A `.agents/.manifest.json` (gitignored) records SHA256 of every file we publish so we can detect local edits.
-
-Decision matrix the installer applies to each file:
-
-| Existing state | Default action | `--force` | `--force-all` |
-|---|---|---|---|
-| File missing | **install** | install | install |
-| Identical to ours | **unchanged** | unchanged | unchanged |
-| Owned by another package (`source:` differs) | **defer** (their territory) | defer | overwrite |
-| Same source, but existing copy is `canonical: true` and ours is bundled (`canonical: false`) | **defer** (don't downgrade) | defer | overwrite |
-| Our prior install, untouched on disk | **update** (silent upgrade) | update | update |
-| Our prior install, locally edited | **preserve** (keep edits) | overwrite | overwrite |
-
-**Bundled-but-deferred skills** are marked `canonical: false` so the upstream canonical version wins automatically when present:
-
-- **5 Laravel-canonical** (`laravel-best-practices`, `pest-testing`, `fluxui-development`, `volt-development`, `tailwindcss-development`) — defer to `laravel/boost` or any other Laravel-skills publisher
-- **2 Anthropic-canonical** (`webapp-testing`, `mcp-builder`) — defer to `@anthropics/skills` if installed
-- **1 Sentry-canonical** (`agents-md`) — defers to Sentry's `@getsentry/skills` if installed
-
-We ship all of them as fallback so you get them even without their upstream publisher.
-
-**Upgrading from v1.8.x → v1.9.0:** v1.9.0 adds `harden-logic` (Railway-Oriented Programming + Specification Pattern + Finite State Machine scaffolding for stateful workflows) and wires it into `brainstorming`'s and `writing-plans`' decision flow. New files install fresh; updated planning skills will be deferred if you've edited them locally (re-run with `--force` only if you want our updates). If you're coming from v1.6.0 (pre-frontmatter), the original migration step still applies:
-
-```bash
-composer update joranski/agents
-php artisan agents:install --skills --force   # one-time, only if upgrading from v1.6.0
-```
-
-After that one-shot, future upgrades are silent (`--force` no longer needed unless you actually edit a skill locally).
-
-#### Install summary output
-
-```
-  install     5   new files written
-  update     14   upgraded from prior install
-  unchanged   2   already current
-  preserved   1   local edits kept (re-run with --force to overwrite)
-  deferred    5   existing canonical copy beats our bundled version
-
-  Notices:
-    • Preserved local edits in .agents/skills/brainstorming/SKILL.md (re-run with --force to overwrite)
-    • Deferred to existing owner (laravel/skills): .agents/skills/pest-testing/SKILL.md
-```
-
-## Environment Variables
-
-Add to `.env` (the setup wizard handles these automatically):
-
-```env
-# Required for Night Shift autonomous agent
-ANTHROPIC_API_KEY="sk-ant-..."
-
-# Used by git:pull to restart the correct supervisor worker group
-# Defaults to {project-directory-name}-worker if not set
-SUPERVISOR_WORKER="your-project-worker"
+php artisan agents:install --force-all   # Overwrite EVERYTHING (including upstream canonicals)
 ```
 
 ## Night Shift
 
-Autonomous AI agent that solves GitHub issues while you sleep.
+Autonomous AI agent that solves GitHub issues and remediates security vulnerabilities while you sleep.
 
 ```bash
 # Manual run
@@ -160,122 +101,91 @@ cd /var/www/your-project && ./bin/night-shift
 0 2 * * * cd /var/www/your-project && ./bin/night-shift >> storage/logs/night-shift.log 2>&1
 ```
 
-Requires: `ANTHROPIC_API_KEY` in `.env`, `gh` CLI authenticated, clean git working tree.
+Features:
+- **Brains-and-Hands Isolation:** Runs in a separate, isolated git worktree (`.worktrees/night-shift-...`).
+- **Prompt Injection Defense:** Treats all issue bodies and external test outputs as untrusted data.
+- **GitHub API Burst Throttling:** Capped at max 3 issue/PR actions per minute (20s sleep between calls) to prevent spam flags.
+- **Daily Maintainer Digest:** Logs to `storage/logs/night-shift-digest-YYYYMMDD.md`, categorizing results into *Pearls Ready to Merge* vs *Chaff to Close*.
 
-## Skills Included
+---
 
-### Process (planning & design)
+## Skills Included (30 Total)
+
+### Process (Planning & Design)
 | Skill | Purpose |
 |-------|---------|
-| `brainstorming` | Design before code — explores intent, requirements, and recommends a worktree strategy |
-| `writing-plans` | Multi-step task planning with TDD steps, worktree strategy, and execution-mode hand-off |
+| `brainstorming` | Design before code — explores intent, requirements, and recommends worktree & architecture strategies |
+| `writing-plans` | Multi-step task planning with TDD steps, Anti-Cheat Contract, and execution-mode hand-off |
+| `voice-spec-ingestor` | Ingest raw 15-minute voice recordings/transcripts, normalize against `lexicon.json`, and synthesize 8-step plans |
 | `using-git-worktrees` | Isolated feature work — invoked only when the plan recommends it (advisory) |
 
 ### Execution
 | Skill | Purpose |
 |-------|---------|
 | `executing-plans` | Plan execution with batch checkpoints for human review |
-| `single-flow-task-execution` | Plan execution with automated per-task two-stage review (default) |
+| `single-flow-task-execution` | Plan-Once, Execute-Cheap ($550 -> $23) sequential execution with automated two-stage review |
 | `finishing-a-development-branch` | Branch completion workflow — merge / PR / keep / discard |
-| `git-push` | Agent-generated commit messages from diff analysis + preflight |
+| `git-push` | Agent-generated commit messages from diff analysis + preflight + Agent Attribution trailer |
+| `night-shift` | Autonomous nocturnal issue solver and dependency auditor with worktree isolation |
 
-### Quality (review, debug, test)
+### Quality (Review, Debug, Test)
 | Skill | Purpose |
 |-------|---------|
-| `verification-before-completion` | Evidence before claims — no shortcuts |
+| `verification-before-completion` | Evidence before claims — requires surgical verification during iteration and full run before completion |
 | `systematic-debugging` | Root-cause analysis before proposing fixes |
 | `test-driven-development` | Red-green-refactor discipline |
-| `code-review` | Pre-merge review, feedback reception, Filament Blueprint audit |
+| `code-review` | Pre-merge review with Surrounding Context Radius Auditing, Cross-Model Adversarial Verification, and Security Combo checks |
 | `removing-dead-files` | Safe dead code removal (proof of death required) |
+| `auto-research-optimizer` | Autonomous benchmark-driven optimization loop (baseline metric -> 1 hypothesis -> commit or `git checkout -- .`) |
 
-### Architecture & meta
+### Architecture & Systems
 | Skill | Purpose |
 |-------|---------|
-| `writing-skills` | Creating new skills with TDD |
-| `agents-md` | Generate and maintain `AGENTS.md` files (bundled, defers to `getsentry/skills`) |
+| `writing-skills` | Creating new skills with TDD and slim frontmatter architecture |
+| `agents-md` | Generate and maintain ultra-compact `AGENTS.md` (<120 lines) following the 80% System Prompt Shrink Rule |
 | `package-extraction-scout` | Identify mature services that should become standalone Composer packages |
-| `harden-logic` | Scaffold ROP + Specification + FSM architecture for stateful workflows (Result type, composable rule gates, guarded state transitions) |
+| `harden-logic` | Scaffold ROP + Specification + FSM architecture for stateful workflows with mandatory 50% Complexity Cut Gate |
+| `polyglot-architecture` | Standards for Phone Apps (SwiftUI/Compose/RN), Web, Systems (Rust/Go), and Python-to-Rust hot-path offload |
+| `system-cli-and-bash` | DHH's Golden Bash Rule (explicit `if/then/fi`), cross-platform PowerShell/Bash, and malleable plugins |
 | `mcp-builder` | Build Model Context Protocol servers (bundled, defers to `anthropics/skills`) |
 | `webapp-testing` | Test web apps with Playwright at the agent level (bundled, defers to `anthropics/skills`) |
 
-### Domain (Laravel)
+### UI & Media
+| Skill | Purpose |
+|-------|---------|
+| `taste-differential-ui` | 3-Option Differential Taste Harness (Minimalist, Editorial, Opinionated behind `?variant=a|b|c`), then prune |
+| `ai-media-pipeline` | Character/Style Bibles, Static Keyframe Pre-Validation before video rendering, and FFmpeg automation |
+
+### Domain (Laravel & Web)
 | Skill | Purpose |
 |-------|---------|
 | `laravel-best-practices` | Laravel PHP code patterns (DB, security, eloquent, queues, etc.) — bundled, defers to `laravel/skills` |
-| `pest-testing` | Pest PHP testing patterns, browser tests, datasets — bundled, defers to `laravel/skills` |
-| `fluxui-development` | Flux UI component development — bundled, defers to `laravel/skills` |
+| `pest-testing` | Pest PHP testing patterns, surgical dirty-diff iteration, browser tests, datasets — bundled, defers to `laravel/skills` |
+| `fluxui-development` | Flux UI component development — enforces Zero FilamentPHP standard with `flux-crud-stub.blade.php` |
 | `volt-development` | Single-file Livewire Volt components — bundled, defers to `laravel/skills` |
 | `tailwindcss-development` | Tailwind CSS v4 utility patterns — bundled, defers to `laravel/skills` |
 
-See [CREDITS.md](CREDITS.md) for upstream attribution on bundled skills.
+---
+
+## Major Changes in v2.0.0 (DHH Agentic Upgrade)
+
+### 1. Complete FilamentPHP Purge (Zero Filament Standard)
+All administrative interfaces, data tables, modals, and CRUD resources must be built directly with **Livewire/Volt + Flux UI + Tailwind CSS**. FilamentPHP dependencies, tokens, and MCP configurations have been completely removed from the package.
+
+### 2. Multi-Tier Cost & Labor Reduction Protocols
+- **Surgical Dirty-Diff Testing During Iteration (`_shared/test-runner.md`):** Agents are forbidden from running full test suites mid-loop on large projects. They must run dirty-diffs (`pest --dirty --stop-on-failure`) or single files with bail flags. Polyglot test runners for Rust, JS/TS, and Python are provided.
+- **Plan-Once, Execute-Cheap Protocol:** Frontier reasoning models author an 8-step plan with an explicit **Anti-Cheat Contract** (forbidding empty wrappers or disabled assertions). Cost-effective worker models execute steps bite-by-bite and copy boilerplate from `assets/` via CLI rather than regenerating tokens.
+- **Mandatory 50% Complexity Cut Gate (`harden-logic`):** Before completing stateful implementations, agents must review their diff and prune accidental complexity, merging single-use abstractions.
+- **Agent Attribution Rule:** Automated commits include `Signed-off-by: [Agent/Model] on behalf of @joranski`.
+- **Night Shift Hardening:** Isolated worktree execution, prompt injection defense on untrusted issues, burst throttling (max 3/min), and maintainer digest reporting.
+
+---
 
 ## Security & Operational Warnings
 
-This package ships with several pieces that touch system-level concerns. Read this section before installing in production or shared environments.
-
-### Night Shift uses reduced sandboxing
-
-`stubs/bin/night-shift` invokes Claude Code with `--dangerously-skip-permissions`, which bypasses Claude Code's per-tool permission prompts. It also auto-pushes branches to your `origin` after each iteration.
-
-**Run only when:**
-- The repository is yours and you control its `origin` remote
-- The host is dedicated (not a shared dev machine or CI runner with broader access)
-- Your `ANTHROPIC_API_KEY` has a budget cap configured at console.anthropic.com
-- You have monitoring on the resulting branches before any merge
-
-If any of those isn't true, don't enable Night Shift via cron. Run it manually and inspect each branch.
-
-### `git:pull` requires passwordless `sudo` and assumes Linux + nginx
-
-The `git:pull` deploy pipeline runs:
-
-```bash
-sudo chown -R $USER:nginx storage/ bootstrap/cache/
-sudo chmod -R 775 storage/ bootstrap/cache/
-sudo supervisorctl restart <worker>:*
-sudo systemctl reload php-fpm
-```
-
-**This will not work on:** macOS dev machines, FreeBSD, Windows, hosts without `nginx` group, hosts without supervisor, or any environment without passwordless sudo for the deploy user. It is a **Linux + nginx + php-fpm + supervisor** production-server tool.
-
-For local dev: use `php artisan migrate`, `composer install`, etc. directly. `git:pull` is for `/var/www/...` style deploys.
-
-### Credentials land in `auth.json` and `.env`
-
-`agents:install` writes:
-- **Filament Blueprint token** → `auth.json` (via `composer config --auth`)
-- **Flux Pro token** → `auth.json` (via `composer config --auth`)
-- **Anthropic API key** → `.env` as `ANTHROPIC_API_KEY=...`
-
-`auth.json` should be in your `.gitignore` (Composer's default behavior, but verify). `.env` is already gitignored by every Laravel template. **Never commit either.**
-
-### MCP configs include placeholder tokens
-
-`stubs/mcp/gemini-settings.json` includes a `Bearer YOUR_FILAMENT_EXAMPLES_TOKEN` placeholder for the Filament Examples MCP server. Replace with your real token only locally — the file is published to your project, not your repo's tracked location, but be aware the placeholder is published as-is.
-
-### Skills you bundle execute on your machine
-
-When you `agents:install`, 23 skill files are written to `.agents/skills/` and become readable by any AI agent you point at the project. Skills cannot execute code on their own, but they can instruct an agent to run shell commands. Only install this package in projects you trust to run agent-generated code.
-
-**Reducing context bloat:** If you previously installed `using-superpowers`, delete `.agents/skills/using-superpowers/` locally — it forced meta-documentation into every turn. Re-run `php artisan agents:install` to pick up consolidated skills; use `--force` only when you want to overwrite your local edits.
-
-## Migrating from local commands
-
-If your project already has `app/Console/Commands/GitPull.php` and `GitPush.php`, delete them after installing this package — the package provides them automatically via Laravel's package auto-discovery.
-
-```bash
-# 1. Install the package
-composer require joranski/agents --dev
-
-# 2. Add SUPERVISOR_WORKER to .env (replaces any hardcoded worker name)
-echo 'SUPERVISOR_WORKER="your-project-worker"' >> .env
-
-# 3. Remove local copies
-rm app/Console/Commands/GitPull.php app/Console/Commands/GitPush.php
-
-# 4. Verify
-php artisan git:pull --help
-```
+- **Night Shift Sandboxing:** `bin/night-shift` isolates work in `.worktrees/` and auto-pushes branches to `origin`. Review branches before merging to main.
+- **`git:pull` Production Target:** `git:pull` is configured for Linux + nginx + php-fpm + supervisor production servers. For local development, use native artisan commands.
+- **Credentials Security:** Flux Pro tokens land in `auth.json` (ensure `auth.json` is gitignored). Anthropic keys land in `.env`.
 
 ## License
 
@@ -283,4 +193,4 @@ MIT — see [LICENSE](LICENSE).
 
 ## Credits
 
-Built on top of [Superpowers](https://github.com/jessesquires/superpowers) (workflow skills), [Laravel](https://laravel.com) (Laravel-canonical skills), [Anthropic](https://officialskills.sh/anthropics) (`webapp-testing`, `mcp-builder`), and [Sentry](https://officialskills.sh/getsentry) (`agents-md`). See [CREDITS.md](CREDITS.md) for full attribution.
+Built on top of [Superpowers](https://github.com/jessesquires/superpowers), [Laravel](https://laravel.com), [Anthropic](https://officialskills.sh/anthropics), and [Sentry](https://officialskills.sh/getsentry). See [CREDITS.md](CREDITS.md) for full attribution.

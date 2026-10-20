@@ -13,7 +13,8 @@ class GitPush extends Command
                             {--force-tests : Run the test suite even when no PHP-relevant files changed}
                             {--skip-pint : Skip code style fixing}
                             {--parallel : Run tests in parallel (needs ~512M RAM per CPU core; default is sequential)}
-                            {--no-parallel : Disable parallel execution for Pint}';
+                            {--no-parallel : Disable parallel execution for Pint}
+                            {--agent= : Specify agent name for attribution trailer (e.g. Claude, Cursor, Antigravity)}';
 
     protected $description = 'Safe git push pipeline: preflight checks → stage → commit → push';
 
@@ -93,6 +94,11 @@ class GitPush extends Command
                     ? 'no local changes detected'
                     : 'no PHP-relevant changes: '.$this->formatChangedFileSummary($changedFiles);
                 $this->line("  <fg=gray>skip</> Tests ({$reason})");
+
+                $polyglotTypes = $this->detectPolyglotChanges($changedFiles);
+                if ($polyglotTypes !== []) {
+                    $this->line('  <comment>Notice:</comment> Detected '.implode(', ', $polyglotTypes).' changes. Run scoped runner per .agents/skills/_shared/test-runner.md');
+                }
             } else {
                 $this->newLine();
                 $mode = $useTestParallel ? 'parallel' : 'sequential';
@@ -163,6 +169,11 @@ class GitPush extends Command
             placeholder: 'feat: describe your change',
             required: true,
         );
+
+        $agent = $this->option('agent') ?: getenv('AGENT_NAME');
+        if ($agent && ! str_contains($message, 'Signed-off-by:')) {
+            $message = rtrim($message)."\n\nSigned-off-by: {$agent} on behalf of @joranski";
+        }
 
         $escapedMessage = escapeshellarg($message);
         system("git commit -m {$escapedMessage}");
@@ -528,5 +539,26 @@ class GitPush extends Command
         $shown = array_slice($files, 0, 3);
 
         return implode(', ', $shown).' (+'.(count($files) - 3).' more)';
+    }
+
+    /**
+     * @param  list<string>  $files
+     * @return list<string>
+     */
+    private function detectPolyglotChanges(array $files): array
+    {
+        $types = [];
+        foreach ($files as $file) {
+            $lower = strtolower($file);
+            if (str_ends_with($lower, '.rs') || $lower === 'cargo.toml') {
+                $types['Rust'] = true;
+            } elseif (str_ends_with($lower, '.py') || in_array($lower, ['pyproject.toml', 'requirements.txt'], true)) {
+                $types['Python'] = true;
+            } elseif (str_ends_with($lower, '.ts') || str_ends_with($lower, '.tsx') || str_ends_with($lower, '.js') || $lower === 'package.json') {
+                $types['JS/TS/Mobile'] = true;
+            }
+        }
+
+        return array_keys($types);
     }
 }
