@@ -1,6 +1,6 @@
 # Joranski Agents
 
-AI agent skills, smart deploy, safe push, and Night Shift automation for Laravel and polyglot projects.
+AI agent skills, smart deploy, safe push, and Night Shift automation for Laravel, React, and polyglot projects.
 
 ## Install
 
@@ -22,8 +22,8 @@ The installer will:
 
 1. **Prompt for credentials** — Flux Pro, Anthropic API key (press Enter to skip any)
 2. **Configure Supervisor** — sets `SUPERVISOR_WORKER` in `.env` for the deploy pipeline
-3. **Publish 30 AI agent skills** → `.agents/skills/` (with collision-safe upgrades — see below)
-4. **Publish agent rules** → `.agents/rules/` (including the Zero FilamentPHP rule)
+3. **Publish 32 AI agent skills** → `.agents/skills/` (with collision-safe upgrades — see below)
+4. **Publish agent rules** → `.agents/rules/` (including the Zero FilamentPHP and React/FluxUI co-equal standard)
 5. **Install Night Shift** → `bin/night-shift` (autonomous issue solver with Brains-and-Hands Isolation)
 6. **Configure MCP** → `claude.json` + `.gemini/settings.json`
 7. **Track ownership** → `.agents/.manifest.json` (gitignored) records which files we installed
@@ -75,7 +75,7 @@ php artisan git:push --parallel        # Opt-in parallel tests (needs ~512M RAM 
 php artisan git:push --no-parallel     # Disable parallel Pint
 ```
 
-Tests auto-skip when local changes are not PHP-relevant (docs, CSS, assets, or polyglot files like Rust/Python/Node). When polyglot files change without PHP files, a notice is displayed pointing to scoped runners in `.agents/skills/_shared/test-runner.md`. Tests run in a **clean environment** (`env -i`) so inherited `.env` values do not override `phpunit.xml`.
+Tests auto-skip when local changes are not PHP-relevant (docs, CSS, assets, or polyglot files like Rust/Python/Node/React). When polyglot files change without PHP files, a notice is displayed pointing to scoped runners in `.agents/skills/_shared/test-runner.md`. Tests run in a **clean environment** (`env -i`) so inherited `.env` values do not override `phpunit.xml`.
 
 ### `php artisan agents:install`
 
@@ -109,7 +109,7 @@ Features:
 
 ---
 
-## Skills Included (30 Total)
+## Skills Included (32 Total)
 
 ### Process (Planning & Design)
 | Skill | Purpose |
@@ -128,7 +128,7 @@ Features:
 | `git-push` | Agent-generated commit messages from diff analysis + preflight + Agent Attribution trailer |
 | `night-shift` | Autonomous nocturnal issue solver and dependency auditor with worktree isolation |
 
-### Quality (Review, Debug, Test)
+### Quality (Review, Debug, Test, Compliance)
 | Skill | Purpose |
 |-------|---------|
 | `verification-before-completion` | Evidence before claims — requires surgical verification during iteration and full run before completion |
@@ -137,6 +137,7 @@ Features:
 | `code-review` | Pre-merge review with Surrounding Context Radius Auditing, Cross-Model Adversarial Verification, and Security Combo checks |
 | `removing-dead-files` | Safe dead code removal (proof of death required) |
 | `auto-research-optimizer` | Autonomous benchmark-driven optimization loop (baseline metric -> 1 hypothesis -> commit or `git checkout -- .`) |
+| `web-compliance-audit` | **DORMANT** pre-launch audit for ADA Title III (WCAG 2.2 AA), Privacy/GPC, California Prop 65, and FTC Click-to-Cancel |
 
 ### Architecture & Systems
 | Skill | Purpose |
@@ -145,7 +146,7 @@ Features:
 | `agents-md` | Generate and maintain ultra-compact `AGENTS.md` (<120 lines) following the 80% System Prompt Shrink Rule |
 | `package-extraction-scout` | Identify mature services that should become standalone Composer packages |
 | `harden-logic` | Scaffold ROP + Specification + FSM architecture for stateful workflows with mandatory 50% Complexity Cut Gate |
-| `polyglot-architecture` | Standards for Phone Apps (SwiftUI/Compose/RN), Web, Systems (Rust/Go), and Python-to-Rust hot-path offload |
+| `polyglot-architecture` | Standards for Phone Apps (SwiftUI/Compose/RN), Web (React & FluxUI co-equal), Systems (Rust/Go), and Python offload |
 | `system-cli-and-bash` | DHH's Golden Bash Rule (explicit `if/then/fi`), cross-platform PowerShell/Bash, and malleable plugins |
 | `mcp-builder` | Build Model Context Protocol servers (bundled, defers to `anthropics/skills`) |
 | `webapp-testing` | Test web apps with Playwright at the agent level (bundled, defers to `anthropics/skills`) |
@@ -153,31 +154,37 @@ Features:
 ### UI & Media
 | Skill | Purpose |
 |-------|---------|
-| `taste-differential-ui` | 3-Option Differential Taste Harness (Minimalist, Editorial, Opinionated behind `?variant=a|b|c`), then prune |
+| `taste-differential-ui` | 3-Option Differential Taste Harness in React or FluxUI (Minimalist, Editorial, Opinionated behind `?variant=a|b|c`), then prune |
 | `ai-media-pipeline` | Character/Style Bibles, Static Keyframe Pre-Validation before video rendering, and FFmpeg automation |
 
-### Domain (Laravel & Web)
+### Domain (Laravel, React & Web)
 | Skill | Purpose |
 |-------|---------|
+| `react-development` | Modern React 19+ / TypeScript development (Inertia v2 & Next.js) — co-equal with FluxUI with `react-crud-stub.tsx` |
+| `fluxui-development` | Flux UI component development — co-equal with React, enforces Zero FilamentPHP standard with `flux-crud-stub.blade.php` |
 | `laravel-best-practices` | Laravel PHP code patterns (DB, security, eloquent, queues, etc.) — bundled, defers to `laravel/skills` |
 | `pest-testing` | Pest PHP testing patterns, surgical dirty-diff iteration, browser tests, datasets — bundled, defers to `laravel/skills` |
-| `fluxui-development` | Flux UI component development — enforces Zero FilamentPHP standard with `flux-crud-stub.blade.php` |
 | `volt-development` | Single-file Livewire Volt components — bundled, defers to `laravel/skills` |
 | `tailwindcss-development` | Tailwind CSS v4 utility patterns — bundled, defers to `laravel/skills` |
 
 ---
 
-## Major Changes in v2.0.0 (DHH Agentic Upgrade)
+## Major Changes in v2.1.0
 
-### 1. Complete FilamentPHP Purge (Zero Filament Standard)
-All administrative interfaces, data tables, modals, and CRUD resources must be built directly with **Livewire/Volt + Flux UI + Tailwind CSS**. FilamentPHP dependencies, tokens, and MCP configurations have been completely removed from the package.
+### 1. React & FluxUI Co-Equal First-Class Parity
+- **Co-Equal Frontend Stacks:** While maintaining the strict **Zero FilamentPHP** rule, projects can build rich frontends using either **React** (TypeScript + Tailwind CSS + Radix/Shadcn UI via Inertia.js v2, Next.js, or Vite) or **Livewire/Volt + FluxUI + Tailwind CSS**.
+- **Auto-Detection:** Agents automatically detect `package.json` (React) or `composer.json` (`livewire/flux` or `livewire/volt`) and apply the matching skill.
+- **Canonical React Starter:** Added `react-crud-stub.tsx` providing a full-featured, accessible data table with modal forms and `Result<T, E>` error handling.
+- **Taste Differential UI Parity:** `taste-differential-ui` supports both React (`useSearchParams`) and Livewire/Volt.
 
-### 2. Multi-Tier Cost & Labor Reduction Protocols
-- **Surgical Dirty-Diff Testing During Iteration (`_shared/test-runner.md`):** Agents are forbidden from running full test suites mid-loop on large projects. They must run dirty-diffs (`pest --dirty --stop-on-failure`) or single files with bail flags. Polyglot test runners for Rust, JS/TS, and Python are provided.
-- **Plan-Once, Execute-Cheap Protocol:** Frontier reasoning models author an 8-step plan with an explicit **Anti-Cheat Contract** (forbidding empty wrappers or disabled assertions). Cost-effective worker models execute steps bite-by-bite and copy boilerplate from `assets/` via CLI rather than regenerating tokens.
-- **Mandatory 50% Complexity Cut Gate (`harden-logic`):** Before completing stateful implementations, agents must review their diff and prune accidental complexity, merging single-use abstractions.
-- **Agent Attribution Rule:** Automated commits include `Signed-off-by: [Agent/Model] on behalf of @joranski`.
-- **Night Shift Hardening:** Isolated worktree execution, prompt injection defense on untrusted issues, burst throttling (max 3/min), and maintainer digest reporting.
+### 2. Zero-Bloat Pre-Launch `web-compliance-audit` Gate
+- **Strict Isolation:** Skill remains **DORMANT** during everyday feature development so token budgets and development speed are unaffected.
+- **The 4 Lawsuit-Prevention Pillars:**
+  1. **ADA Title III / WCAG 2.2 Level AA:** Focus traps, `aria-label` on icon buttons, live error announcements, skip links.
+  2. **Privacy, Cookies & Global Privacy Control:** Auto-detects and honors browser `Sec-GPC: 1` (`navigator.globalPrivacyControl`), blocks non-essential trackers prior to consent.
+  3. **Regional & Statutory Disclosures:** California Prop 65 Safe Harbor warning banner and FTC 1-click subscription cancellation parity.
+  4. **Actionable Output:** Outputs clean remediation tables (`Severity | Pillar | File:Line | Exact Code Fix`) with auto-patching support.
+- **Snippets Included:** Copy-paste-ready React (`.tsx`) and Blade/FluxUI (`.blade.php`) components in `assets/compliance-snippets.md`.
 
 ---
 

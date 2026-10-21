@@ -554,7 +554,7 @@ class GitPush extends Command
                 $types['Rust'] = true;
             } elseif (str_ends_with($lower, '.py') || in_array($lower, ['pyproject.toml', 'requirements.txt'], true)) {
                 $types['Python'] = true;
-            } elseif (str_ends_with($lower, '.ts') || str_ends_with($lower, '.tsx') || str_ends_with($lower, '.js') || $lower === 'package.json') {
+            } elseif (str_ends_with($lower, '.ts') || str_ends_with($lower, '.tsx') || str_ends_with($lower, '.js') || str_ends_with($lower, '.jsx') || $lower === 'package.json') {
                 $types['JS/TS/Mobile'] = true;
             }
         }

@@ -8,15 +8,16 @@
 > Core application description in one sentence.
 
 ## Stack & Architecture
-- **Backend:** PHP 8.4, Laravel 12
-- **UI Architecture:** Livewire 4, Volt 1, Flux UI Pro, Tailwind CSS v4 (**Zero FilamentPHP standard**)
+- **Backend:** PHP 8.4, Laravel 12 (or Node 22 / Next.js 15)
+- **UI Architecture:** React 19 (TypeScript + Tailwind CSS + Radix/Shadcn UI via Inertia v2 / Next.js) OR Livewire 4 / Volt 1 + Flux UI Pro (**Zero FilamentPHP standard**)
 - **Data & Cache:** PostgreSQL 16, Redis 7
-- **Testing:** Pest 4, Playwright
+- **Testing:** Pest 4, Vitest, Playwright
 
 ## Daily Commands
 ```bash
 # Surgical iteration (never run full suite mid-loop):
-vendor/bin/pest --dirty --stop-on-failure --compact
+vendor/bin/pest --dirty --stop-on-failure --compact    # PHP
+npx vitest run path/to/file.test.tsx --bail=1          # React / TS
 php -d memory_limit=1G artisan test --compact --bail tests/Feature/SpecificTest.php
 
 # Code style:
@@ -27,7 +28,8 @@ php artisan git:push
 ```
 
 ## Conventions
-1. **Zero FilamentPHP:** All admin views, tables, and modals use Livewire Volt + Flux UI (`<flux:table>`, `<flux:modal>`).
+1. **Zero FilamentPHP (Co-Equal Stacks):** Build all admin views, tables, and modals with React (Radix/Shadcn + Tailwind) or Livewire Volt + Flux UI (`<flux:table>`, `<flux:modal>`). Never install Filament.
+2. **Auto-Detect UI Stack:** Apply `react-development` if `package.json` contains `react`; apply `fluxui-development` if `composer.json` contains `livewire/flux`.
 2. **ROP & Logic:** Stateful multi-step workflows use `harden-logic` `Result` pipelines (`app/Architecture/Support/Result.php`).
 3. **Surgical Testing:** Run dirty diffs or single test methods during iteration; full suite runs only on push.
 
