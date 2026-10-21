@@ -79,15 +79,56 @@ Tests auto-skip when local changes are not PHP-relevant (docs, CSS, assets, or p
 
 ### `php artisan agents:install`
 
-Publish agent files into your project with **smart collision handling** — your local edits and skills owned by other Composer packages (e.g. `laravel/boost`) are preserved automatically.
+Publish agent files into your project with **smart collision handling** — your local edits and skills owned by other Composer packages (e.g. `laravel/boost`) are preserved automatically. Automatically prunes deprecated v1.x skills and stale filament configs.
 
 ```bash
-php artisan agents:install               # Install/upgrade safely (defers conflicts)
+php artisan agents:install               # Install/upgrade safely (defers conflicts, auto-prunes v1 skills)
 php artisan agents:install --setup       # Re-run credentials wizard only
 php artisan agents:install --skills      # Only install/update skills
 php artisan agents:install --force       # Also overwrite OUR skills you've edited locally
 php artisan agents:install --force-all   # Overwrite EVERYTHING (including upstream canonicals)
+php artisan agents:install --no-prune    # Skip pruning deprecated skills and configs
 ```
+
+### `php artisan agents:update`
+
+One-step package update and asset refresh: checks composer constraints, runs `composer update joranski/agents`, and runs `agents:install --force` with automatic deprecated skill and stale config pruning.
+
+```bash
+php artisan agents:update               # Update package + force-refresh skills & configs with auto-pruning
+php artisan agents:update --no-composer # Refresh skills & configs without running composer update
+php artisan agents:update --skills      # Update skills only
+```
+
+## Upgrading from v1.x (^1.4) to v2.x
+
+Upgrading from `v1.x` (`^1.4`) to `v2.x` represents a major version boundary with architectural consolidations. **`composer update` alone will not cross the `^1.x` → `^2.x` semver boundary without updating your `composer.json` constraint.**
+
+### Step 1: Update the Package Constraint
+
+```bash
+composer require joranski/agents:^2.1 --dev
+```
+*(or omit `--dev` if installed in production)*
+
+### Step 2: Run the Installer to Refresh & Prune
+
+```bash
+php artisan agents:install --force
+# or
+php artisan agents:update --no-composer
+```
+
+### What Happens Automatically:
+- **Deprecated v1 Skill Pruning:** Automatically detects and removes retired v1.x skill directories from `.agents/skills/` (as well as `.cursor/skills/` and `.claude/skills/` if present):
+  - `using-superpowers`
+  - `requesting-code-review`
+  - `receiving-code-review`
+  - `blueprint-code-review`
+  - Any stale skill directory matching `*filament*`
+- **Stale MCP Server Sanitization:** Scans `.gemini/settings.json`, `.mcp.json`, and `claude.json` to strip obsolete `filament-examples` entries while safely preserving all custom project MCP servers.
+- **Manifest Cleanup:** Removes pruned entries from `.agents/.manifest.json` so upgrade tracking remains clean and accurate.
+- **Fresh v2.1 Parity:** Deploys the complete suite of 32 modular skills with co-equal React & FluxUI first-class parity and pre-launch compliance audits.
 
 ## Night Shift
 
@@ -169,15 +210,20 @@ Features:
 
 ---
 
-## Major Changes in v2.1.0
+## Major Changes in v2.1.0 & v2.1.1
 
-### 1. React & FluxUI Co-Equal First-Class Parity
+### 1. Automated v1-to-v2 Upgrade & Deprecated Skill Pruning (v2.1.1)
+- **Automatic Pruning in `agents:install`:** Automatically removes obsolete v1 skill directories (`using-superpowers`, `requesting-code-review`, `receiving-code-review`, `blueprint-code-review`, and `*filament*`) from `.agents/skills/`, `.cursor/skills/`, and `.claude/skills/`.
+- **MCP Config Sanitization:** Strips legacy `filament-examples` entries from `.gemini/settings.json`, `.mcp.json`, and `claude.json` while safely preserving custom user MCP servers.
+- **New `php artisan agents:update` Command:** Single-command workflow that checks composer constraints, executes `composer update joranski/agents`, and force-refreshes installed stubs with automatic pruning.
+
+### 2. React & FluxUI Co-Equal First-Class Parity (v2.1.0)
 - **Co-Equal Frontend Stacks:** While maintaining the strict **Zero FilamentPHP** rule, projects can build rich frontends using either **React** (TypeScript + Tailwind CSS + Radix/Shadcn UI via Inertia.js v2, Next.js, or Vite) or **Livewire/Volt + FluxUI + Tailwind CSS**.
 - **Auto-Detection:** Agents automatically detect `package.json` (React) or `composer.json` (`livewire/flux` or `livewire/volt`) and apply the matching skill.
 - **Canonical React Starter:** Added `react-crud-stub.tsx` providing a full-featured, accessible data table with modal forms and `Result<T, E>` error handling.
 - **Taste Differential UI Parity:** `taste-differential-ui` supports both React (`useSearchParams`) and Livewire/Volt.
 
-### 2. Zero-Bloat Pre-Launch `web-compliance-audit` Gate
+### 3. Zero-Bloat Pre-Launch `web-compliance-audit` Gate (v2.1.0)
 - **Strict Isolation:** Skill remains **DORMANT** during everyday feature development so token budgets and development speed are unaffected.
 - **The 4 Lawsuit-Prevention Pillars:**
   1. **ADA Title III / WCAG 2.2 Level AA:** Focus traps, `aria-label` on icon buttons, live error announcements, skip links.

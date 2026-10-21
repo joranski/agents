@@ -13,13 +13,14 @@ class AgentsInstall extends Command
                             {--force : Overwrite files we own (source matches), even if hand-edited; do not touch files owned by other packages}
                             {--force-all : Overwrite EVERYTHING including files owned by other packages (dangerous, legacy behavior)}
                             {--skills : Only install/update skills}
+                            {--no-prune : Do not prune deprecated v1.x skills or stale configs}
                             {--setup : Run interactive credentials & environment wizard}';
 
     protected $description = 'Install AI agent skills, Night Shift, and MCP configs into your project';
 
     private const PACKAGE_NAME = 'joranski/agents';
 
-    private const PACKAGE_VERSION = '2.1.0';
+    private const PACKAGE_VERSION = '2.1.1';
 
     private const MANIFEST_RELATIVE_PATH = '.agents/.manifest.json';
 
@@ -35,6 +36,7 @@ class AgentsInstall extends Command
         'installed' => 0,           // file did not exist; we wrote it
         'updated' => 0,             // file existed and was ours-untouched; we upgraded it
         'unchanged' => 0,           // file already matches what we'd write; no-op
+        'pruned' => 0,              // deprecated v1 skills or stale configs deleted
         'deferred_owner' => 0,      // file owned by a different package; left alone
         'deferred_canonical' => 0,  // existing file marked canonical=true while ours is canonical=false
         'deferred_user_edited' => 0,// our file was modified after we installed it
@@ -58,9 +60,15 @@ class AgentsInstall extends Command
         $onlySkills = $this->option('skills');
         $runSetup = $this->option('setup');
         $all = ! $onlySkills;
+        $prune = ! $this->option('no-prune');
 
         if ($this->option('force-all')) {
             $this->components->warn('--force-all will overwrite files owned by OTHER packages. This is rarely correct.');
+        }
+
+        // ── Deprecated v1.x Skills & Stale Configs Pruning ──────────
+        if ($prune) {
+            $this->pruneDeprecatedSkillsAndConfigs();
         }
 
         // ── Interactive Setup Wizard ────────────────────────────────
@@ -368,6 +376,7 @@ class AgentsInstall extends Command
             ['installed', $this->stats['installed'], 'new files written'],
             ['updated', $this->stats['updated'], 'upgraded from prior install'],
             ['unchanged', $this->stats['unchanged'], 'already current'],
+            ['pruned', $this->stats['pruned'], 'deprecated v1 skills or stale configs removed'],
             ['preserved', $this->stats['deferred_user_edited'], 'local edits kept (re-run with --force to overwrite)'],
             ['deferred', $this->stats['deferred_owner'], 'owned by another package'],
             ['deferred', $this->stats['deferred_canonical'], 'existing canonical copy beats our bundled version'],
@@ -389,14 +398,124 @@ class AgentsInstall extends Command
             }
         }
 
+        $skillDir = $this->projectRoot.'/.agents/skills';
+        $skillCount = File::isDirectory($skillDir)
+            ? count(array_filter(File::directories($skillDir), fn ($d) => basename($d) !== '_shared'))
+            : 32;
+
         $this->newLine();
         $this->components->bulletList([
-            'Skills: .agents/skills/ (26 AI agent skills, '.self::PACKAGE_VERSION.')',
+            "Skills: .agents/skills/ ({$skillCount} AI agent skills, ".self::PACKAGE_VERSION.')',
             'Manifest: .agents/.manifest.json (tracks ownership for safe upgrades)',
-            'Commands: php artisan git:pull, git:push',
+            'Commands: php artisan git:pull, git:push, agents:update',
             'Re-run setup: php artisan agents:install --setup',
+            'Update & prune: php artisan agents:update',
             'Force-update local edits: php artisan agents:install --skills --force',
         ]);
+    }
+
+    // ─────────────────────────────────────────────────────────────────
+    // Prune Deprecated Skills & Stale Configs
+    // ─────────────────────────────────────────────────────────────────
+
+    private function pruneDeprecatedSkillsAndConfigs(): void
+    {
+        $this->pruneDeprecatedSkills();
+        $this->pruneStaleMcpConfigs();
+    }
+
+    private function pruneDeprecatedSkills(): void
+    {
+        $skillRoots = [
+            $this->projectRoot.'/.agents/skills',
+            $this->projectRoot.'/.cursor/skills',
+            $this->projectRoot.'/.claude/skills',
+        ];
+
+        $deprecatedNames = [
+            'using-superpowers',
+            'requesting-code-review',
+            'receiving-code-review',
+            'blueprint-code-review',
+        ];
+
+        $prunedAny = false;
+
+        foreach ($skillRoots as $root) {
+            if (! File::isDirectory($root)) {
+                continue;
+            }
+
+            foreach (File::directories($root) as $dir) {
+                $name = basename($dir);
+                $isDeprecated = in_array($name, $deprecatedNames, true)
+                    || str_contains(strtolower($name), 'filament');
+
+                if (! $isDeprecated) {
+                    continue;
+                }
+
+                if (! $prunedAny) {
+                    $this->newLine();
+                    $this->components->info('Pruning Deprecated v1.x Skills & Configs');
+                    $prunedAny = true;
+                }
+
+                File::deleteDirectory($dir);
+
+                $relative = ltrim(str_replace($this->projectRoot, '', $dir), '/\\');
+                $relativeKey = str_replace('\\', '/', $relative);
+
+                // Clean up manifest entries for this pruned directory
+                foreach (array_keys($this->manifest) as $key) {
+                    if (str_starts_with($key, $relativeKey.'/') || $key === $relativeKey) {
+                        unset($this->manifest[$key]);
+                    }
+                }
+
+                $this->line("  <fg=yellow>pruned</fg=yellow>   {$relativeKey} <fg=gray>(deprecated v1 skill)</>");
+                $this->stats['pruned']++;
+                $this->notices[] = "Pruned deprecated v1 skill: {$relativeKey}";
+            }
+        }
+    }
+
+    private function pruneStaleMcpConfigs(): void
+    {
+        $mcpFiles = [
+            $this->projectRoot.'/.gemini/settings.json',
+            $this->projectRoot.'/.mcp.json',
+            $this->projectRoot.'/claude.json',
+        ];
+
+        foreach ($mcpFiles as $file) {
+            if (! File::exists($file)) {
+                continue;
+            }
+
+            $raw = File::get($file);
+            $decoded = json_decode($raw, true);
+
+            if (! is_array($decoded) || ! isset($decoded['mcpServers']) || ! is_array($decoded['mcpServers'])) {
+                continue;
+            }
+
+            if (isset($decoded['mcpServers']['filament-examples'])) {
+                unset($decoded['mcpServers']['filament-examples']);
+
+                File::put(
+                    $file,
+                    json_encode($decoded, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES)."\n"
+                );
+
+                $relative = ltrim(str_replace($this->projectRoot, '', $file), '/\\');
+                $relativeKey = str_replace('\\', '/', $relative);
+
+                $this->line("  <fg=yellow>pruned</fg=yellow>   {$relativeKey} <fg=gray>(stripped stale filament-examples MCP server)</>");
+                $this->stats['pruned']++;
+                $this->notices[] = "Stripped stale filament-examples MCP server from {$relativeKey}";
+            }
+        }
     }
 
     // ─────────────────────────────────────────────────────────────────

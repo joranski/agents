@@ -4,6 +4,7 @@ namespace Joranski\Agents;
 
 use Illuminate\Support\ServiceProvider;
 use Joranski\Agents\Commands\AgentsInstall;
+use Joranski\Agents\Commands\AgentsUpdate;
 use Joranski\Agents\Commands\GitPull;
 use Joranski\Agents\Commands\GitPush;
 
@@ -14,6 +15,7 @@ class AgentsServiceProvider extends ServiceProvider
         if ($this->app->runningInConsole()) {
             $this->commands([
                 AgentsInstall::class,
+                AgentsUpdate::class,
                 GitPull::class,
                 GitPush::class,
             ]);
