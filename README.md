@@ -89,6 +89,7 @@ Publish agent files into your project with **smart collision handling** — your
 ```bash
 php artisan agents:install               # Install/upgrade safely (defers conflicts, auto-prunes v1 skills)
 php artisan agents:install --setup       # Re-run credentials wizard only
+php artisan agents:install --no-setup    # Never ask about the credentials wizard (used by agents:update)
 php artisan agents:install --skills      # Only install/update skills
 php artisan agents:install --force       # Also overwrite OUR skills you've edited locally
 php artisan agents:install --force-all   # Overwrite EVERYTHING (including upstream canonicals)
@@ -213,6 +214,10 @@ Features:
 Framework skills (`laravel-best-practices`, `testing-best-practices`, `livewire-development`, `volt-development`, `fluxui-development`, `tailwindcss-development`) come from Laravel Boost.
 
 ---
+
+## Major Changes in v2.2.1
+
+- `agents:update` no longer asks "Run credentials & environment setup?" — it passes the new `agents:install --no-setup`, so it runs cleanly from Composer scripts and cron.
 
 ## Major Changes in v2.2.0
 

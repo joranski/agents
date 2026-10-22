@@ -14,13 +14,14 @@ class AgentsInstall extends Command
                             {--force-all : Overwrite EVERYTHING including files owned by other packages (dangerous, legacy behavior)}
                             {--skills : Only install/update skills}
                             {--no-prune : Do not prune deprecated v1.x skills or stale configs}
-                            {--setup : Run interactive credentials & environment wizard}';
+                            {--setup : Run interactive credentials & environment wizard}
+                            {--no-setup : Never ask to run the credentials & environment wizard}';
 
     protected $description = 'Install AI agent skills, Night Shift, and MCP configs into your project';
 
     private const PACKAGE_NAME = 'joranski/agents';
 
-    private const PACKAGE_VERSION = '2.2.0';
+    private const PACKAGE_VERSION = '2.2.1';
 
     private const MANIFEST_RELATIVE_PATH = '.agents/.manifest.json';
 
@@ -87,7 +88,7 @@ class AgentsInstall extends Command
         $this->ensureBoostIsConfigured();
 
         // ── Interactive Setup Wizard ────────────────────────────────
-        if ($runSetup || $all) {
+        if ($runSetup || ($all && ! $this->option('no-setup'))) {
             if ($runSetup || Prompts\confirm('Run credentials & environment setup?', ! File::exists($this->projectRoot.'/.env'))) {
                 $this->runSetupWizard($this->projectRoot);
             }

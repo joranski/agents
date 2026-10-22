@@ -65,6 +65,7 @@ class AgentsUpdate extends Command
 
         $installParams = [
             '--force' => true,
+            '--no-setup' => true,
         ];
 
         if ($this->option('force-all')) {
