@@ -161,7 +161,7 @@ test('signup flow', async ({ page }) => {
 
 - **Called by:** `verification-before-completion` (when claim involves UI behavior); `single-flow-task-execution` (during the quality review stage of any task that touches a view)
 - **Calls:** Pest 4 browser API, Playwright, or the Cursor IDE Browser MCP — whichever is available
-- **See also:** `.agents/skills/pest-testing/SKILL.md` for full Pest 4 patterns including datasets and architecture tests
+- **See also:** `testing-best-practices` (Laravel Boost) and `search-docs` for full Pest 4 patterns including datasets and architecture tests
 
 ## See Also
 

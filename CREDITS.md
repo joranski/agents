@@ -22,17 +22,9 @@ The following workflow skills are derived from or inspired by Jesse Vincent's [S
 
 These skills retain Superpowers' core philosophy — pressure-resistant language, anti-pattern sections, RED-GREEN-REFACTOR mapping, and bulletproofed checklists — adapted for Laravel + PHP workflows and tool-agnostic execution. License: MIT (Superpowers).
 
-## Laravel-Canonical Skills
+## Laravel Boost
 
-The following skills are bundled copies of skills published by the Laravel team. They ship marked `canonical: false` and `bundled_by: joranski/agents` so that if Laravel publishes its own canonical version (e.g. via Boost or `laravel/skills`), that version takes precedence on `php artisan agents:install`:
-
-- `laravel-best-practices` (and all rules under `rules/`)
-- `pest-testing`
-- `fluxui-development`
-- `volt-development`
-- `tailwindcss-development`
-
-Source: [Laravel Skills](https://laravel.com) / [Laravel Boost](https://github.com/laravel/boost). License: MIT (Laravel).
+Framework skills (`laravel-best-practices`, `testing-best-practices`, `livewire-development`, `volt-development`, `fluxui-development`, `tailwindcss-development`) are no longer bundled here as of v2.2.0 — [Laravel Boost](https://github.com/laravel/boost) installs the canonical versions. `flux-admin-crud` builds on Boost's `fluxui-development`. License: MIT (Laravel).
 
 ## Anthropic-Canonical Skills
 

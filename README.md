@@ -22,12 +22,17 @@ The installer will:
 
 1. **Prompt for credentials** — Flux Pro, Anthropic API key (press Enter to skip any)
 2. **Configure Supervisor** — sets `SUPERVISOR_WORKER` in `.env` for the deploy pipeline
-3. **Publish 32 AI agent skills** → `.agents/skills/` (with collision-safe upgrades — see below)
+3. **Publish 28 AI agent skills** → `.agents/skills/` (with collision-safe upgrades — see below), mirrored to `.claude/skills/` when the project uses Claude Code (`.claude/` or `CLAUDE.md` present)
 4. **Publish agent rules** → `.agents/rules/` (including the Zero FilamentPHP and React/FluxUI co-equal standard)
 5. **Install Night Shift** → `bin/night-shift` (autonomous issue solver with Brains-and-Hands Isolation)
-6. **Configure MCP** → `claude.json` + `.gemini/settings.json`
+6. **Configure MCP** → `.gemini/settings.json` (Boost writes `.mcp.json` for Claude Code and `.cursor/mcp.json` for Cursor)
 7. **Track ownership** → `.agents/.manifest.json` (gitignored) records which files we installed
-8. **Update `.gitignore`** with agent runtime files
+8. **Update `.gitignore`** with agent runtime files and an allowlist so only `.agents/rules/` and `.agents/skills/` are committed
+9. **Check Laravel Boost** → offers to run `boost:install` when the project has no `boost.json`
+
+### Laravel Boost is required
+
+[Laravel Boost](https://github.com/laravel/boost) (a dependency of this package) owns the framework skills and guidelines — `laravel-best-practices`, `testing-best-practices`, `livewire-development`, `volt-development`, `fluxui-development`, `tailwindcss-development` — and writes them to `.cursor/skills/`, `.claude/skills/` and `AGENTS.md`. The skills here add workflow and architecture on top of Boost and never ship copies of Boost's skills. Run `php artisan boost:install` once per project (Boost only registers its commands when `APP_ENV=local` or `APP_DEBUG=true`).
 
 ### Re-run setup anytime
 
@@ -92,12 +97,13 @@ php artisan agents:install --no-prune    # Skip pruning deprecated skills and co
 
 ### `php artisan agents:update`
 
-One-step package update and asset refresh: checks composer constraints, runs `composer update joranski/agents`, and runs `agents:install --force` with automatic deprecated skill and stale config pruning.
+One-step package update and asset refresh: checks composer constraints, runs `composer update joranski/agents`, runs `agents:install --force` with automatic deprecated skill and stale config pruning, then runs `boost:update` so Boost's framework skills are current too.
 
 ```bash
-php artisan agents:update               # Update package + force-refresh skills & configs with auto-pruning
+php artisan agents:update               # Update package + force-refresh skills & configs + boost:update
 php artisan agents:update --no-composer # Refresh skills & configs without running composer update
 php artisan agents:update --skills      # Update skills only
+php artisan agents:update --no-boost    # Skip boost:update
 ```
 
 ## Upgrading from v1.x (^1.4) to v2.x
@@ -125,7 +131,7 @@ php artisan agents:update --no-composer
   - `requesting-code-review`
   - `receiving-code-review`
   - `blueprint-code-review`
-  - Any stale skill directory matching `*filament*`
+  - Any stale skill directory matching `*filament*` — in `.cursor/skills/` and `.claude/skills/` only when this package installed it, so Boost's or Filament's own skills are left alone
 - **Stale MCP Server Sanitization:** Scans `.gemini/settings.json`, `.mcp.json`, and `claude.json` to strip obsolete `filament-examples` entries while safely preserving all custom project MCP servers.
 - **Manifest Cleanup:** Removes pruned entries from `.agents/.manifest.json` so upgrade tracking remains clean and accurate.
 - **Fresh v2.1 Parity:** Deploys the complete suite of 32 modular skills with co-equal React & FluxUI first-class parity and pre-launch compliance audits.
@@ -150,7 +156,7 @@ Features:
 
 ---
 
-## Skills Included (32 Total)
+## Skills Included (28 Total)
 
 ### Process (Planning & Design)
 | Skill | Purpose |
@@ -202,13 +208,22 @@ Features:
 | Skill | Purpose |
 |-------|---------|
 | `react-development` | Modern React 19+ / TypeScript development (Inertia v2 & Next.js) — co-equal with FluxUI with `react-crud-stub.tsx` |
-| `fluxui-development` | Flux UI component development — co-equal with React, enforces Zero FilamentPHP standard with `flux-crud-stub.blade.php` |
-| `laravel-best-practices` | Laravel PHP code patterns (DB, security, eloquent, queues, etc.) — bundled, defers to `laravel/skills` |
-| `pest-testing` | Pest PHP testing patterns, surgical dirty-diff iteration, browser tests, datasets — bundled, defers to `laravel/skills` |
-| `volt-development` | Single-file Livewire Volt components — bundled, defers to `laravel/skills` |
-| `tailwindcss-development` | Tailwind CSS v4 utility patterns — bundled, defers to `laravel/skills` |
+| `flux-admin-crud` | Admin screens (table, search, modal forms) in Livewire/Volt + Flux — co-equal with React, enforces Zero FilamentPHP, Filament replacement guide and `flux-crud-stub.blade.php`. Uses Boost's `fluxui-development` for component APIs |
+
+Framework skills (`laravel-best-practices`, `testing-best-practices`, `livewire-development`, `volt-development`, `fluxui-development`, `tailwindcss-development`) come from Laravel Boost.
 
 ---
+
+## Major Changes in v2.2.0
+
+- **Laravel Boost owns the framework skills.** Removed the bundled copies of `laravel-best-practices`, `fluxui-development`, `tailwindcss-development`, `volt-development` and `pest-testing`. They were overridden by Boost's copies in Cursor and Claude Code anyway. On upgrade, `agents:install` deletes untouched copies from `.agents/skills/`; copies you edited are kept and listed in the notices.
+- **New `flux-admin-crud` skill** carries the Zero FilamentPHP admin-screen pattern, the Filament replacement guide, and `flux-crud-stub.blade.php` that used to live in the bundled `fluxui-development`.
+- **Boost is part of setup.** `agents:install` offers to run `boost:install` when `boost.json` is missing; `agents:update` finishes with `boost:update` (skip with `--no-boost`).
+- The surgical-testing Iron Law lives in `_shared/test-runner.md`; skills now point to Boost's `testing-best-practices` for Pest patterns.
+- **Claude Code sees the skills.** Skills are mirrored to `.claude/skills/` when the project uses Claude Code.
+- **Dropped the `claude.json` stub.** It pointed at a non-existent `php artisan mcp` command and Claude Code reads `.mcp.json` (written by Boost). Untouched copies are removed on upgrade.
+- **`.gitignore` allowlist for `.agents/`** keeps agent scratch directories out of git; only `rules/` and `skills/` are committed.
+- **Safer `*filament*` pruning.** Outside `.agents/skills/`, only skills this package installed are removed.
 
 ## Major Changes in v2.1.0 & v2.1.1
 

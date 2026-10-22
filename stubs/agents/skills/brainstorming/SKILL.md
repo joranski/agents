@@ -60,7 +60,7 @@ digraph brainstorming {
 }
 ```
 
-**The terminal state is invoking writing-plans.** Do NOT invoke any implementation skill (e.g. `fluxui-development`, `volt-development`, `pest-testing`, `laravel-best-practices`) directly from brainstorming. The ONLY skill you invoke after brainstorming is `writing-plans`. Implementation skills get pulled in by the plan itself.
+**The terminal state is invoking writing-plans.** Do NOT invoke any implementation skill (e.g. `flux-admin-crud`, `fluxui-development`, `volt-development`, `testing-best-practices`, `laravel-best-practices`) directly from brainstorming. The ONLY skill you invoke after brainstorming is `writing-plans`. Implementation skills get pulled in by the plan itself.
 
 ## The Process
 

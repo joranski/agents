@@ -224,9 +224,9 @@ Per-layer commits make code review tractable.
   - `writing-plans` — when the plan's Execution Mode section names `harden-logic` as the target architecture
   - User directly — when the user already knows they want ROP + Spec + FSM and skips the planning step
 - **Calls:**
-  - `.agents/skills/laravel-best-practices/SKILL.md` — Laravel idiom inside generated files (eloquent, transactions, queues)
+  - `laravel-best-practices` (Laravel Boost) — Laravel idiom inside generated files (eloquent, transactions, queues)
   - `.agents/skills/test-driven-development/SKILL.md` — write the failing test FIRST, then the action
-  - `.agents/skills/pest-testing/SKILL.md` — Pest 4 patterns for the generated test
+  - `testing-best-practices` (Laravel Boost) and `.agents/skills/_shared/test-runner.md` — Pest patterns and how to run the generated test
 - **Sister skills:**
   - `.agents/skills/package-extraction-scout/SKILL.md` — a mature `app/Domain/{X}/` folder is a strong package-extraction candidate
   - `.agents/skills/systematic-debugging/SKILL.md` — if a generated pipeline misbehaves, debug Result-by-Result, not by adding logs

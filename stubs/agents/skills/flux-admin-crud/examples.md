@@ -1,4 +1,4 @@
-# Flux UI — Examples & Filament Replacement Reference
+# Flux Admin CRUD — Examples & Filament Replacement Reference
 
 ## Zero FilamentPHP Standard
 Build all admin interfaces, data tables, modals, and forms directly using Livewire/Volt + FluxUI + Tailwind CSS.

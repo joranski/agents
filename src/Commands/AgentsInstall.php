@@ -20,9 +20,22 @@ class AgentsInstall extends Command
 
     private const PACKAGE_NAME = 'joranski/agents';
 
-    private const PACKAGE_VERSION = '2.1.1';
+    private const PACKAGE_VERSION = '2.2.0';
 
     private const MANIFEST_RELATIVE_PATH = '.agents/.manifest.json';
+
+    /**
+     * Skills this package used to bundle as copies of Laravel Boost's. Boost
+     * installs and refreshes the canonical versions, so ours are removed from
+     * `.agents/skills/` on upgrade (never from Boost's `.cursor/` / `.claude/` dirs).
+     */
+    private const RETIRED_BOOST_SKILLS = [
+        'laravel-best-practices',
+        'fluxui-development',
+        'tailwindcss-development',
+        'volt-development',
+        'pest-testing',
+    ];
 
     /** @var array<string, array{sha256: string, source: ?string, canonical: ?bool, installed_at: string}> */
     private array $manifest = [];
@@ -71,6 +84,8 @@ class AgentsInstall extends Command
             $this->pruneDeprecatedSkillsAndConfigs();
         }
 
+        $this->ensureBoostIsConfigured();
+
         // ── Interactive Setup Wizard ────────────────────────────────
         if ($runSetup || $all) {
             if ($runSetup || Prompts\confirm('Run credentials & environment setup?', ! File::exists($this->projectRoot.'/.env'))) {
@@ -87,6 +102,8 @@ class AgentsInstall extends Command
                 $stubsPath.'/agents',
                 $this->projectRoot.'/.agents',
             );
+
+            $this->mirrorSkillsForClaudeCode($stubsPath.'/agents/skills');
         }
 
         // ── Night Shift ─────────────────────────────────────────────
@@ -108,11 +125,6 @@ class AgentsInstall extends Command
         if ($all) {
             $this->newLine();
             $this->components->info('MCP Configurations');
-
-            $this->publishFile(
-                $stubsPath.'/mcp/claude.json',
-                $this->projectRoot.'/claude.json',
-            );
 
             $geminiDir = $this->projectRoot.'/.gemini';
             File::ensureDirectoryExists($geminiDir);
@@ -336,7 +348,7 @@ class AgentsInstall extends Command
         }
 
         // Case B: same source, but existing copy is the canonical one and ours is just bundled
-        // (e.g. we ship laravel/skills' pest-testing as canonical=false; another installer
+        // (e.g. we ship an Anthropic-inspired skill as canonical=false; another installer
         // wrote the canonical=true copy). Only --force-all overrides; downgrading canonical → bundled
         // would lose information so plain --force respects this too.
         if (
@@ -401,7 +413,7 @@ class AgentsInstall extends Command
         $skillDir = $this->projectRoot.'/.agents/skills';
         $skillCount = File::isDirectory($skillDir)
             ? count(array_filter(File::directories($skillDir), fn ($d) => basename($d) !== '_shared'))
-            : 32;
+            : 28;
 
         $this->newLine();
         $this->components->bulletList([
@@ -421,7 +433,171 @@ class AgentsInstall extends Command
     private function pruneDeprecatedSkillsAndConfigs(): void
     {
         $this->pruneDeprecatedSkills();
+        $this->pruneRetiredBoostSkills();
+        $this->pruneLegacyClaudeJson();
         $this->pruneStaleMcpConfigs();
+    }
+
+    /**
+     * Remove our old bundled copies of Boost skills from `.agents/skills/`.
+     * A copy is only deleted when it is marked `bundled_by: joranski/agents`
+     * and no file in it was edited after we installed it.
+     */
+    private function pruneRetiredBoostSkills(): void
+    {
+        $root = $this->projectRoot.'/.agents/skills';
+
+        foreach (self::RETIRED_BOOST_SKILLS as $name) {
+            $dir = $root.'/'.$name;
+
+            if (! File::isDirectory($dir)) {
+                continue;
+            }
+
+            $relativeKey = '.agents/skills/'.$name;
+            $bundledByUs = ($this->readFrontmatter($dir.'/SKILL.md')['bundled_by'] ?? null) === self::PACKAGE_NAME;
+
+            if (! $bundledByUs || $this->hasLocalEdits($dir)) {
+                $this->notices[] = "Kept {$relativeKey} (edited locally or not ours). Laravel Boost now provides {$name}; delete it manually once your edits are moved.";
+
+                continue;
+            }
+
+            File::deleteDirectory($dir);
+
+            foreach (array_keys($this->manifest) as $key) {
+                if (str_starts_with($key, $relativeKey.'/')) {
+                    unset($this->manifest[$key]);
+                }
+            }
+
+            $this->line("  <fg=yellow>pruned</fg=yellow>   {$relativeKey} <fg=gray>(provided by Laravel Boost)</>");
+            $this->stats['pruned']++;
+        }
+    }
+
+    /**
+     * Whether this package installed the skill at $dir (manifest entry or frontmatter marker).
+     */
+    private function isOwnedByUs(string $dir): bool
+    {
+        $frontmatter = $this->readFrontmatter($dir.'/SKILL.md');
+
+        if (($frontmatter['source'] ?? null) === self::PACKAGE_NAME || ($frontmatter['bundled_by'] ?? null) === self::PACKAGE_NAME) {
+            return true;
+        }
+
+        $prefix = $this->manifestKey($dir).'/';
+
+        foreach (array_keys($this->manifest) as $key) {
+            if (str_starts_with($key, $prefix)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Claude Code only reads skills from `.claude/skills/`, so projects that
+     * use it get a copy of each skill there (Boost's skills live alongside).
+     */
+    private function mirrorSkillsForClaudeCode(string $skillsStubPath): void
+    {
+        $usesClaudeCode = File::isDirectory($this->projectRoot.'/.claude')
+            || File::exists($this->projectRoot.'/CLAUDE.md');
+
+        if (! $usesClaudeCode) {
+            return;
+        }
+
+        foreach (File::directories($skillsStubPath) as $skillDir) {
+            if (basename($skillDir) === '_shared') {
+                continue;
+            }
+
+            $this->publishDirectory($skillDir, $this->projectRoot.'/.claude/skills/'.basename($skillDir));
+        }
+    }
+
+    /**
+     * The v2.1 `claude.json` stub pointed at a non-existent `php artisan mcp`
+     * command, and Claude Code reads `.mcp.json` (written by Boost) instead.
+     */
+    private function pruneLegacyClaudeJson(): void
+    {
+        $file = $this->projectRoot.'/claude.json';
+
+        if (! File::exists($file)) {
+            return;
+        }
+
+        $servers = json_decode(File::get($file), true)['mcpServers'] ?? null;
+        $isOurStub = $servers === ['laravel' => ['command' => 'php', 'args' => ['artisan', 'mcp']]];
+
+        if (! $isOurStub) {
+            return;
+        }
+
+        File::delete($file);
+        unset($this->manifest['claude.json']);
+
+        $this->line('  <fg=yellow>pruned</fg=yellow>   claude.json <fg=gray>(unused stub; Claude Code reads .mcp.json)</>');
+        $this->stats['pruned']++;
+    }
+
+    /**
+     * Whether any file under $dir differs from the checksum we recorded at install.
+     */
+    private function hasLocalEdits(string $dir): bool
+    {
+        foreach (File::allFiles($dir) as $file) {
+            $entry = $this->manifest[$this->manifestKey($file->getPathname())] ?? null;
+
+            if ($entry !== null && $entry['sha256'] !== hash_file('sha256', $file->getPathname())) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    // ─────────────────────────────────────────────────────────────────
+    // Laravel Boost
+    // ─────────────────────────────────────────────────────────────────
+
+    /**
+     * The framework skills (Laravel, Livewire, Volt, Flux, Tailwind, testing)
+     * come from Laravel Boost; this package's skills build on them. Offer to
+     * install Boost when the project has no `boost.json` yet.
+     */
+    private function ensureBoostIsConfigured(): void
+    {
+        if (File::exists($this->projectRoot.'/boost.json')) {
+            return;
+        }
+
+        $this->newLine();
+        $this->components->info('Laravel Boost');
+
+        if (! $this->getApplication()?->has('boost:install')) {
+            $this->components->warn('Laravel Boost is not configured, and its commands are not registered (Boost only loads when APP_ENV=local or APP_DEBUG=true).');
+            $this->notices[] = 'Run `php artisan boost:install` in a local environment — Boost provides the framework skills these skills build on.';
+
+            return;
+        }
+
+        if ($this->input->isInteractive() && Prompts\confirm(
+            label: 'Laravel Boost is not configured. Run boost:install now?',
+            default: true,
+            hint: 'Boost provides the Laravel, Livewire, Flux, Tailwind and testing skills these skills build on.',
+        )) {
+            $this->call('boost:install');
+
+            return;
+        }
+
+        $this->notices[] = 'Laravel Boost is not configured. Run `php artisan boost:install` — it provides the framework skills these skills build on.';
     }
 
     private function pruneDeprecatedSkills(): void
@@ -440,6 +616,7 @@ class AgentsInstall extends Command
         ];
 
         $prunedAny = false;
+        $ownRoot = $this->projectRoot.'/.agents/skills';
 
         foreach ($skillRoots as $root) {
             if (! File::isDirectory($root)) {
@@ -448,8 +625,11 @@ class AgentsInstall extends Command
 
             foreach (File::directories($root) as $dir) {
                 $name = basename($dir);
+
+                // v1 *filament* skills are only ours inside .agents/skills; in
+                // .cursor/.claude they may belong to Boost or Filament itself.
                 $isDeprecated = in_array($name, $deprecatedNames, true)
-                    || str_contains(strtolower($name), 'filament');
+                    || (str_contains(strtolower($name), 'filament') && ($root === $ownRoot || $this->isOwnedByUs($dir)));
 
                 if (! $isDeprecated) {
                     continue;
@@ -627,6 +807,10 @@ class AgentsInstall extends Command
             '# Agent runtime',
             '.ralph-stuck',
             '.ralph-complete',
+            '# .agents/ holds only installed rules and skills; agent scratch dirs stay local',
+            '/.agents/*',
+            '!/.agents/rules/',
+            '!/.agents/skills/',
             '.agents/.manifest.json',
         ];
 

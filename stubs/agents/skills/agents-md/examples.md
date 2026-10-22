@@ -29,7 +29,7 @@ php artisan git:push
 
 ## Conventions
 1. **Zero FilamentPHP (Co-Equal Stacks):** Build all admin views, tables, and modals with React (Radix/Shadcn + Tailwind) or Livewire Volt + Flux UI (`<flux:table>`, `<flux:modal>`). Never install Filament.
-2. **Auto-Detect UI Stack:** Apply `react-development` if `package.json` contains `react`; apply `fluxui-development` if `composer.json` contains `livewire/flux`.
+2. **Auto-Detect UI Stack:** Apply `react-development` if `package.json` contains `react`; apply `flux-admin-crud` (screens) with Boost's `fluxui-development` (components) if `composer.json` contains `livewire/flux`.
 2. **ROP & Logic:** Stateful multi-step workflows use `harden-logic` `Result` pipelines (`app/Architecture/Support/Result.php`).
 3. **Surgical Testing:** Run dirty diffs or single test methods during iteration; full suite runs only on push.
 

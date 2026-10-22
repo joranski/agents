@@ -200,7 +200,7 @@ After your agent uses the server for a week:
 - **Called by:** `brainstorming` (when the design recommends agent-tool integration); explicit user request
 - **Calls:** Your application code (Eloquent models, services, etc.) — wrap, don't rewrite
 - **See also:**
-  - `.agents/skills/laravel-best-practices/SKILL.md` for Laravel patterns inside the tool implementation
+  - `laravel-best-practices` (Laravel Boost) for Laravel patterns inside the tool implementation
   - `.agents/skills/test-driven-development/SKILL.md` for testing tool behavior
 
 ## See Also
