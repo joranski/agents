@@ -22,7 +22,7 @@ class AgentsInstall extends Command
 
     private const PACKAGE_NAME = 'joranski/agents';
 
-    private const PACKAGE_VERSION = '2.3.0';
+    private const PACKAGE_VERSION = '2.4.0';
 
     /** Every agent that supports it reads skills from here; `.claude/skills` links to it. */
     private const CENTRAL_SKILLS_PATH = '.agents/skills';
@@ -815,7 +815,53 @@ class AgentsInstall extends Command
             $servers['fluxui-server'] = ['command' => 'npx', 'args' => ['-y', 'fluxui-mcp-server']];
         }
 
+        $servers['context7'] = ['command' => 'npx', 'args' => ['-y', '@upstash/context7-mcp']];
+
+        // Not keyed on `vite`: every Laravel app has it, and Livewire apps already get browser errors from Boost.
+        if ($this->packageJsonRequires(['react', 'vue', 'svelte'])) {
+            $servers['chrome-devtools'] = ['command' => 'npx', 'args' => ['-y', 'chrome-devtools-mcp@latest']];
+        }
+
+        if (File::exists($this->projectRoot.'/components.json')) {
+            $servers['shadcn'] = ['command' => 'npx', 'args' => ['-y', 'shadcn@latest', 'mcp']];
+        }
+
+        if ($this->nextMajorVersion() >= 16) {
+            $servers['next-devtools'] = ['command' => 'npx', 'args' => ['-y', 'next-devtools-mcp@latest']];
+        }
+
         return $servers;
+    }
+
+    /**
+     * @param  list<string>  $packages
+     */
+    private function packageJsonRequires(array $packages): bool
+    {
+        $require = $this->packageJsonDependencies();
+
+        return array_intersect($packages, array_keys($require)) !== [];
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    private function packageJsonDependencies(): array
+    {
+        $packageJson = json_decode((string) @file_get_contents($this->projectRoot.'/package.json'), true) ?: [];
+
+        return ($packageJson['dependencies'] ?? []) + ($packageJson['devDependencies'] ?? []);
+    }
+
+    /**
+     * Installed Next.js major version, falling back to the package.json constraint; 0 when absent.
+     */
+    private function nextMajorVersion(): int
+    {
+        $installed = json_decode((string) @file_get_contents($this->projectRoot.'/node_modules/next/package.json'), true);
+        $version = $installed['version'] ?? $this->packageJsonDependencies()['next'] ?? '';
+
+        return preg_match('/(\d+)/', (string) $version, $matches) === 1 ? (int) $matches[1] : 0;
     }
 
     /**

@@ -52,6 +52,10 @@ Every editor config gets the same servers; entries you already have with the sam
 |--------|------|
 | `laravel-boost` (`php artisan boost:mcp`) | Laravel Boost is installed |
 | `fluxui-server` (`npx -y fluxui-mcp-server`) | `livewire/flux` or `livewire/flux-pro` is required |
+| `context7` (`npx -y @upstash/context7-mcp`) | Always — version-matched docs for libraries outside Boost's `search-docs` (React, React Router, etc.) |
+| `chrome-devtools` (`npx -y chrome-devtools-mcp@latest`) | `package.json` requires `react`, `vue`, or `svelte` (console, network, screenshots, performance in a live Chrome) |
+| `shadcn` (`npx -y shadcn@latest mcp`) | A `components.json` exists (shadcn/ui registries) |
+| `next-devtools` (`npx -y next-devtools-mcp@latest`) | Next.js 16+ is installed or required |
 
 ### Re-run setup anytime
 
@@ -233,6 +237,10 @@ Features:
 Framework skills (`laravel-best-practices`, `testing-best-practices`, `livewire-development`, `volt-development`, `fluxui-development`, `tailwindcss-development`) come from Laravel Boost.
 
 ---
+
+## Major Changes in v2.4.0
+
+- **More shared MCP servers.** `context7` is added everywhere; `chrome-devtools` for React / Vue / Svelte front ends; `shadcn` when `components.json` exists; `next-devtools` for Next.js 16+. Same merge rules as v2.3.0: missing servers are added, existing entries are never overwritten.
 
 ## Major Changes in v2.3.0
 
