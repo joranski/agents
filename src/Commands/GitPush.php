@@ -20,6 +20,26 @@ class GitPush extends Command
 
     public function handle(): int
     {
+        try {
+            return $this->runPipeline();
+        } finally {
+            $this->ringTerminalBell();
+        }
+    }
+
+    /**
+     * Badge the terminal tab (Windows Terminal, tmux, Cursor) when a push
+     * running in another tab finishes or fails. Skipped when output is piped.
+     */
+    private function ringTerminalBell(): void
+    {
+        if (defined('STDOUT') && stream_isatty(STDOUT)) {
+            fwrite(STDOUT, "\x07");
+        }
+    }
+
+    private function runPipeline(): int
+    {
         $this->newLine();
         $this->components->info('Git Push Pipeline');
         $this->line(str_repeat('─', 60));

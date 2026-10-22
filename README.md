@@ -238,6 +238,13 @@ Framework skills (`laravel-best-practices`, `testing-best-practices`, `livewire-
 
 ---
 
+## Major Changes in v2.4.1
+
+- **Testing override.** `rules/guidelines.md` and the `agents-md` skill forbid full-suite runs mid-iteration in favor of `_shared/test-runner.md` (`pest --dirty --stop-on-failure --compact`), since Boost's testing skill defaults to the full suite.
+- **Leaner `systematic-debugging` and `writing-skills`.** Both follow the `SKILL.md` (<40 lines) + `examples.md` + `assets/` layout. `systematic-debugging` starts from `storage/logs/laravel.log` and the `chrome-devtools` MCP; its meta-test files and graphviz tooling are gone. Retired files are pruned from existing projects on `agents:update` (edited copies are kept with a notice).
+- **Terminal bell.** `git:push` and `bin/night-shift` ring the bell on exit when attached to a terminal, so the tab badges when a background run finishes.
+- `bin/night-shift`: a failing `composer audit` no longer aborts the script under `set -e` before the vulnerability check runs.
+
 ## Major Changes in v2.4.0
 
 - **More shared MCP servers.** `context7` is added everywhere; `chrome-devtools` for React / Vue / Svelte front ends; `shadcn` when `components.json` exists; `next-devtools` for Next.js 16+. Same merge rules as v2.3.0: missing servers are added, existing entries are never overwritten.

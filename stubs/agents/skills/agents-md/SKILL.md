@@ -21,6 +21,7 @@ Treat `AGENTS.md` strictly as a high-signal router pointing to `.agents/skills/`
 2. **Protected Boost Markers:** Preserve `<!-- BOOST_START --> ... <!-- BOOST_END -->` blocks untouched.
 3. **1-Line Tool Pointers:** Support `CLAUDE.md` and `.cursorrules` with 1-line pointers to `AGENTS.md`.
 4. **Zero FilamentPHP & Co-Equal UI:** Mandate React (TS + Radix/Shadcn + Tailwind) or Livewire/Volt + FluxUI. Auto-detect stack: `package.json` (React) vs `composer.json` (Livewire/Flux).
+5. **Testing Override:** Never run full test suites mid-iteration; strictly follow `.agents/skills/_shared/test-runner.md` (`pest --dirty --stop-on-failure --compact` or single-file runners).
 
 ## Required Sections (<120 Lines Total)
 1. **Identity & Stack:** Purpose, framework/runtime, UI stack (React or Livewire/Flux), DB, test framework.

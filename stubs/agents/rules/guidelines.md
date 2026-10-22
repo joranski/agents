@@ -11,3 +11,5 @@ Auto-detect stack: `package.json` with `react` -> `react-development`; `composer
 
 ## Laravel Boost Owns the Framework Skills
 Laravel Boost (`php artisan boost:install`, refreshed by `boost:update`) is the source of truth for framework skills and guidelines: `laravel-best-practices`, `testing-best-practices`, `livewire-development`, `volt-development`, `fluxui-development`, `tailwindcss-development`. Skills in `.agents/skills/` add workflow and architecture on top of those — they never replace them.
+
+**Testing Override:** Never run full test suites mid-iteration; strictly follow `.agents/skills/_shared/test-runner.md` (`pest --dirty --stop-on-failure --compact` or single-file runners).

@@ -5,6 +5,7 @@ namespace Joranski\Agents\Commands;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Process;
+use Laravel\Boost\BoostServiceProvider;
 use Laravel\Prompts;
 
 class AgentsInstall extends Command
@@ -22,7 +23,7 @@ class AgentsInstall extends Command
 
     private const PACKAGE_NAME = 'joranski/agents';
 
-    private const PACKAGE_VERSION = '2.4.0';
+    private const PACKAGE_VERSION = '2.4.1';
 
     /** Every agent that supports it reads skills from here; `.claude/skills` links to it. */
     private const CENTRAL_SKILLS_PATH = '.agents/skills';
@@ -42,6 +43,27 @@ class AgentsInstall extends Command
         'pest-testing',
     ];
 
+    /**
+     * Files earlier versions published inside skills that are still shipped.
+     * They are removed on upgrade unless edited after install. Paths are
+     * relative to the skills directory.
+     */
+    private const RETIRED_SKILL_FILES = [
+        'systematic-debugging/CREATION-LOG.md',
+        'systematic-debugging/test-academic.md',
+        'systematic-debugging/test-pressure-1.md',
+        'systematic-debugging/test-pressure-2.md',
+        'systematic-debugging/test-pressure-3.md',
+        'systematic-debugging/root-cause-tracing.md',
+        'systematic-debugging/defense-in-depth.md',
+        'systematic-debugging/condition-based-waiting.md',
+        'systematic-debugging/condition-based-waiting-example.ts',
+        'systematic-debugging/find-polluter.sh',
+        'writing-skills/graphviz-conventions.dot',
+        'writing-skills/render-graphs.js',
+        'writing-skills/persuasion-principles.md',
+    ];
+
     /** @var array<string, array{sha256: string, source: ?string, canonical: ?bool, installed_at: string}> */
     private array $manifest = [];
 
@@ -57,7 +79,7 @@ class AgentsInstall extends Command
         'pruned' => 0,              // deprecated v1 skills or stale configs deleted
         'deferred_owner' => 0,      // file owned by a different package; left alone
         'deferred_canonical' => 0,  // existing file marked canonical=true while ours is canonical=false
-        'deferred_user_edited' => 0,// our file was modified after we installed it
+        'deferred_user_edited' => 0, // our file was modified after we installed it
         'force_overwritten' => 0,   // --force or --force-all clobbered something we'd have deferred
     ];
 
@@ -458,8 +480,52 @@ class AgentsInstall extends Command
     {
         $this->pruneDeprecatedSkills();
         $this->pruneRetiredBoostSkills();
+        $this->pruneRetiredSkillFiles();
         $this->pruneLegacyClaudeJson();
         $this->pruneStaleMcpConfigs();
+    }
+
+    /**
+     * Delete RETIRED_SKILL_FILES from the central skills directory and from a
+     * copied (non-symlinked) `.claude/skills` mirror. A file is only deleted
+     * when it is ours and still matches the checksum recorded at install.
+     */
+    private function pruneRetiredSkillFiles(): void
+    {
+        $roots = [self::CENTRAL_SKILLS_PATH];
+
+        if (File::isDirectory($this->projectRoot.'/.claude/skills') && ! is_link($this->projectRoot.'/.claude/skills')) {
+            $roots[] = '.claude/skills';
+        }
+
+        foreach ($roots as $root) {
+            foreach (self::RETIRED_SKILL_FILES as $file) {
+                $relative = $root.'/'.$file;
+                $path = $this->projectRoot.'/'.$relative;
+
+                if (! File::isFile($path)) {
+                    continue;
+                }
+
+                $entry = $this->manifest[$relative] ?? null;
+
+                if ($entry === null && ! $this->isOwnedByUs(dirname($path))) {
+                    continue;
+                }
+
+                if ($entry !== null && $entry['sha256'] !== hash_file('sha256', $path)) {
+                    $this->notices[] = "Kept {$relative} (edited locally). It is no longer shipped; delete it once your edits are moved.";
+
+                    continue;
+                }
+
+                File::delete($path);
+                unset($this->manifest[$relative]);
+
+                $this->line("  <fg=yellow>pruned</fg=yellow>   {$relative} <fg=gray>(retired skill file)</>");
+                $this->stats['pruned']++;
+            }
+        }
     }
 
     /**
@@ -807,7 +873,7 @@ class AgentsInstall extends Command
     {
         $servers = [];
 
-        if (class_exists(\Laravel\Boost\BoostServiceProvider::class)) {
+        if (class_exists(BoostServiceProvider::class)) {
             $servers['laravel-boost'] = ['command' => 'php', 'args' => ['artisan', 'boost:mcp']];
         }
 
@@ -986,7 +1052,6 @@ class AgentsInstall extends Command
 
         $envPath = $projectRoot.'/.env';
         $projectName = basename($projectRoot);
-
 
         // ── Flux Pro ────────────────────────────────────────────────
         $this->components->info('Flux Pro (composer.fluxui.dev)');

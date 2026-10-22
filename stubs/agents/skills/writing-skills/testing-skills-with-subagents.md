@@ -139,7 +139,7 @@ Forces explicit choice.
 
 **Best tests combine 3+ pressures.**
 
-**Why this works:** See persuasion-principles.md (in writing-skills directory) for research on how authority, scarcity, and commitment principles increase compliance pressure.
+**Why this works:** authority, scarcity, and commitment pressures are what push agents to rationalize skipping a rule, so a skill that holds under them holds in real sessions.
 
 ### Key Elements of Good Scenarios
 

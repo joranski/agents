@@ -1,6 +1,14 @@
 #!/bin/bash
 set -e
 
+# Badge the terminal tab when a run finishes or fails; silent under cron/pipes.
+ring_bell() {
+    if [ -t 1 ]; then
+        printf '\a'
+    fi
+}
+trap ring_bell EXIT
+
 echo "Starting Night Shift Run at $(date)..."
 export NVM_DIR="$HOME/.nvm"
 if [ -s "$NVM_DIR/nvm.sh" ]; then
@@ -40,8 +48,8 @@ if [ -n "$OPEN_ISSUES" ]; then
 fi
 
 # Check 2: Composer security audit
-AUDIT_OUTPUT=$(composer audit 2>&1)
-AUDIT_EXIT=$?
+AUDIT_EXIT=0
+AUDIT_OUTPUT=$(composer audit 2>&1) || AUDIT_EXIT=$?
 if [ $AUDIT_EXIT -ne 0 ] || echo "$AUDIT_OUTPUT" | grep -q "Found"; then
     echo "Security vulnerabilities detected."
     HAS_WORK=1
@@ -73,6 +81,7 @@ cleanup() {
     echo "Cleaning up worktree ${WORKTREE_DIR}..."
     cd - >/dev/null 2>&1 || true
     git worktree remove --force "$WORKTREE_DIR" 2>/dev/null || true
+    ring_bell
 }
 trap cleanup EXIT
 
