@@ -81,34 +81,10 @@ class AgentsUpdate extends Command
             $installParams['--no-prune'] = true;
         }
 
-        $exitCode = $this->call('agents:install', $installParams);
-
-        if ($exitCode !== self::SUCCESS || $this->option('no-boost')) {
-            return $exitCode;
+        if ($this->option('no-boost')) {
+            $installParams['--no-boost'] = true;
         }
 
-        return $this->refreshBoost($projectRoot);
-    }
-
-    /**
-     * Boost owns the framework skills (Laravel, Livewire, Flux, Tailwind,
-     * testing), so an agents update also pulls Boost's latest copies.
-     */
-    private function refreshBoost(string $projectRoot): int
-    {
-        if (! File::exists($projectRoot.'/boost.json')) {
-            return self::SUCCESS;
-        }
-
-        if (! $this->getApplication()?->has('boost:update')) {
-            $this->components->warn('Skipped boost:update — Laravel Boost commands only register when APP_ENV=local or APP_DEBUG=true.');
-
-            return self::SUCCESS;
-        }
-
-        $this->newLine();
-        $this->components->info('Refreshing Laravel Boost guidelines and skills...');
-
-        return $this->call('boost:update', ['--no-discover' => true]);
+        return $this->call('agents:install', $installParams);
     }
 }

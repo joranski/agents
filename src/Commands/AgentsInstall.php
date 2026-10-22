@@ -15,13 +15,17 @@ class AgentsInstall extends Command
                             {--skills : Only install/update skills}
                             {--no-prune : Do not prune deprecated v1.x skills or stale configs}
                             {--setup : Run interactive credentials & environment wizard}
-                            {--no-setup : Never ask to run the credentials & environment wizard}';
+                            {--no-setup : Never ask to run the credentials & environment wizard}
+                            {--no-boost : Do not run boost:update after installing}';
 
     protected $description = 'Install AI agent skills, Night Shift, and MCP configs into your project';
 
     private const PACKAGE_NAME = 'joranski/agents';
 
-    private const PACKAGE_VERSION = '2.2.1';
+    private const PACKAGE_VERSION = '2.3.0';
+
+    /** Every agent that supports it reads skills from here; `.claude/skills` links to it. */
+    private const CENTRAL_SKILLS_PATH = '.agents/skills';
 
     private const MANIFEST_RELATIVE_PATH = '.agents/.manifest.json';
 
@@ -104,7 +108,7 @@ class AgentsInstall extends Command
                 $this->projectRoot.'/.agents',
             );
 
-            $this->mirrorSkillsForClaudeCode($stubsPath.'/agents/skills');
+            $this->centralizeSkills($stubsPath.'/agents/skills');
         }
 
         // ── Night Shift ─────────────────────────────────────────────
@@ -127,12 +131,7 @@ class AgentsInstall extends Command
             $this->newLine();
             $this->components->info('MCP Configurations');
 
-            $geminiDir = $this->projectRoot.'/.gemini';
-            File::ensureDirectoryExists($geminiDir);
-            $this->publishFile(
-                $stubsPath.'/mcp/gemini-settings.json',
-                $geminiDir.'/settings.json',
-            );
+            $this->syncMcpConfigs();
         }
 
         // ── .gitignore entries ──────────────────────────────────────
@@ -143,9 +142,36 @@ class AgentsInstall extends Command
         $this->saveManifest();
 
         // ── Summary ─────────────────────────────────────────────────
-        $this->renderSummary();
+        $this->renderSummary($stubsPath.'/agents/skills');
 
-        return self::SUCCESS;
+        if ($this->option('no-boost')) {
+            return self::SUCCESS;
+        }
+
+        return $this->refreshBoost();
+    }
+
+    /**
+     * Boost owns the framework skills (Laravel, Livewire, Flux, Tailwind,
+     * testing), so every install also pulls Boost's latest copies into the
+     * central skills directory.
+     */
+    private function refreshBoost(): int
+    {
+        if (! File::exists($this->projectRoot.'/boost.json')) {
+            return self::SUCCESS;
+        }
+
+        if (! $this->getApplication()?->has('boost:update')) {
+            $this->components->warn('Skipped boost:update — Laravel Boost commands only register when APP_ENV=local or APP_DEBUG=true.');
+
+            return self::SUCCESS;
+        }
+
+        $this->newLine();
+        $this->components->info('Refreshing Laravel Boost guidelines and skills...');
+
+        return $this->call('boost:update', ['--no-discover' => true]);
     }
 
     // ─────────────────────────────────────────────────────────────────
@@ -380,7 +406,7 @@ class AgentsInstall extends Command
     // Summary
     // ─────────────────────────────────────────────────────────────────
 
-    private function renderSummary(): void
+    private function renderSummary(string $skillsStubPath): void
     {
         $this->newLine();
         $this->line(str_repeat('─', 60));
@@ -411,14 +437,11 @@ class AgentsInstall extends Command
             }
         }
 
-        $skillDir = $this->projectRoot.'/.agents/skills';
-        $skillCount = File::isDirectory($skillDir)
-            ? count(array_filter(File::directories($skillDir), fn ($d) => basename($d) !== '_shared'))
-            : 28;
+        $skillCount = count(array_filter(File::directories($skillsStubPath), fn ($d) => basename($d) !== '_shared'));
 
         $this->newLine();
         $this->components->bulletList([
-            "Skills: .agents/skills/ ({$skillCount} AI agent skills, ".self::PACKAGE_VERSION.')',
+            "Skills: .agents/skills/ ({$skillCount} joranski/agents skills, ".self::PACKAGE_VERSION.', alongside Laravel Boost\'s)',
             'Manifest: .agents/.manifest.json (tracks ownership for safe upgrades)',
             'Commands: php artisan git:pull, git:push, agents:update',
             'Re-run setup: php artisan agents:install --setup',
@@ -458,8 +481,13 @@ class AgentsInstall extends Command
             $relativeKey = '.agents/skills/'.$name;
             $bundledByUs = ($this->readFrontmatter($dir.'/SKILL.md')['bundled_by'] ?? null) === self::PACKAGE_NAME;
 
-            if (! $bundledByUs || $this->hasLocalEdits($dir)) {
-                $this->notices[] = "Kept {$relativeKey} (edited locally or not ours). Laravel Boost now provides {$name}; delete it manually once your edits are moved.";
+            // Boost writes its own copy of this skill here now; only ours goes.
+            if (! $bundledByUs) {
+                continue;
+            }
+
+            if ($this->hasLocalEdits($dir)) {
+                $this->notices[] = "Kept {$relativeKey} (edited locally). Laravel Boost now provides {$name}; delete it manually once your edits are moved.";
 
                 continue;
             }
@@ -499,19 +527,121 @@ class AgentsInstall extends Command
         return false;
     }
 
-    /**
-     * Claude Code only reads skills from `.claude/skills/`, so projects that
-     * use it get a copy of each skill there (Boost's skills live alongside).
-     */
-    private function mirrorSkillsForClaudeCode(string $skillsStubPath): void
-    {
-        $usesClaudeCode = File::isDirectory($this->projectRoot.'/.claude')
-            || File::exists($this->projectRoot.'/CLAUDE.md');
+    // ─────────────────────────────────────────────────────────────────
+    // Central skills directory
+    // ─────────────────────────────────────────────────────────────────
 
-        if (! $usesClaudeCode) {
+    /**
+     * Keep one skills directory, `.agents/skills/`. Cursor, Codex, Antigravity,
+     * OpenCode and Amp read it natively, and AgentsServiceProvider points
+     * Boost's Cursor (and linked Claude Code) skills there. Claude Code only
+     * reads `.claude/skills/`, so that becomes a symlink to the central dir.
+     */
+    private function centralizeSkills(string $skillsStubPath): void
+    {
+        $this->absorbSkillDirectory('.cursor/skills');
+
+        if (! $this->usesClaudeCode() || is_link($this->projectRoot.'/.claude/skills')) {
             return;
         }
 
+        $this->absorbSkillDirectory('.claude/skills');
+
+        if ($this->linkClaudeSkills()) {
+            $this->line('  <info>link</info>     .claude/skills → '.self::CENTRAL_SKILLS_PATH);
+
+            return;
+        }
+
+        $this->notices[] = 'Could not symlink .claude/skills to '.self::CENTRAL_SKILLS_PATH.' (e.g. Windows without symlink rights); copying skills there instead.';
+        $this->mirrorSkillsForClaudeCode($skillsStubPath);
+    }
+
+    /**
+     * Fold an editor-specific skills directory into the central one: Boost's
+     * skills and duplicates are dropped (Boost rewrites its own), anything
+     * else is moved so user-authored skills are kept.
+     */
+    private function absorbSkillDirectory(string $relativeDir): void
+    {
+        $dir = $this->projectRoot.'/'.$relativeDir;
+
+        if (is_link($dir) || ! File::isDirectory($dir)) {
+            return;
+        }
+
+        $central = $this->projectRoot.'/'.self::CENTRAL_SKILLS_PATH;
+        $boostSkills = $this->boostTrackedSkills();
+
+        foreach (File::directories($dir) as $skillDir) {
+            $name = basename($skillDir);
+
+            if (in_array($name, $boostSkills, true) || File::isDirectory($central.'/'.$name)) {
+                File::deleteDirectory($skillDir);
+
+                continue;
+            }
+
+            File::moveDirectory($skillDir, $central.'/'.$name);
+            $this->notices[] = "Moved {$relativeDir}/{$name} to ".self::CENTRAL_SKILLS_PATH."/{$name}";
+        }
+
+        foreach (array_keys($this->manifest) as $key) {
+            if (str_starts_with($key, $relativeDir.'/')) {
+                unset($this->manifest[$key]);
+            }
+        }
+
+        if (File::files($dir) === [] && File::directories($dir) === []) {
+            File::deleteDirectory($dir);
+            $this->line("  <fg=yellow>moved</fg=yellow>    {$relativeDir} → ".self::CENTRAL_SKILLS_PATH);
+            $this->stats['pruned']++;
+        }
+    }
+
+    private function linkClaudeSkills(): bool
+    {
+        $link = $this->projectRoot.'/.claude/skills';
+
+        if (File::exists($link)) {
+            return false;
+        }
+
+        File::ensureDirectoryExists(dirname($link));
+
+        return @symlink('../'.self::CENTRAL_SKILLS_PATH, $link);
+    }
+
+    private function usesClaudeCode(): bool
+    {
+        return File::isDirectory($this->projectRoot.'/.claude')
+            || File::exists($this->projectRoot.'/CLAUDE.md')
+            || in_array('claude_code', $this->boostConfig()['agents'] ?? [], true);
+    }
+
+    /**
+     * @return list<string> skill names Boost installs (from boost.json)
+     */
+    private function boostTrackedSkills(): array
+    {
+        return array_values(array_filter($this->boostConfig()['skills'] ?? [], 'is_string'));
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function boostConfig(): array
+    {
+        $path = $this->projectRoot.'/boost.json';
+
+        return File::exists($path) ? (json_decode(File::get($path), true) ?: []) : [];
+    }
+
+    /**
+     * Fallback when `.claude/skills` cannot be a symlink: copy our skills there.
+     */
+    private function mirrorSkillsForClaudeCode(string $skillsStubPath): void
+    {
         foreach (File::directories($skillsStubPath) as $skillDir) {
             if (basename($skillDir) === '_shared') {
                 continue;
@@ -618,6 +748,7 @@ class AgentsInstall extends Command
 
         $prunedAny = false;
         $ownRoot = $this->projectRoot.'/.agents/skills';
+        $boostSkills = $this->boostTrackedSkills();
 
         foreach ($skillRoots as $root) {
             if (! File::isDirectory($root)) {
@@ -627,10 +758,11 @@ class AgentsInstall extends Command
             foreach (File::directories($root) as $dir) {
                 $name = basename($dir);
 
-                // v1 *filament* skills are only ours inside .agents/skills; in
-                // .cursor/.claude they may belong to Boost or Filament itself.
+                // *filament* skills may belong to Boost or Filament itself — even
+                // inside .agents/skills, which Boost now writes to as well.
                 $isDeprecated = in_array($name, $deprecatedNames, true)
-                    || (str_contains(strtolower($name), 'filament') && ($root === $ownRoot || $this->isOwnedByUs($dir)));
+                    || (str_contains(strtolower($name), 'filament')
+                        && ($this->isOwnedByUs($dir) || ($root === $ownRoot && ! in_array($name, $boostSkills, true))));
 
                 if (! $isDeprecated) {
                     continue;
@@ -659,6 +791,101 @@ class AgentsInstall extends Command
                 $this->notices[] = "Pruned deprecated v1 skill: {$relativeKey}";
             }
         }
+    }
+
+    // ─────────────────────────────────────────────────────────────────
+    // MCP servers (shared across editors)
+    // ─────────────────────────────────────────────────────────────────
+
+    /**
+     * MCP servers every editor in the project should have. Existing entries
+     * with the same name are never overwritten, so local tweaks survive.
+     *
+     * @return array<string, array{command: string, args: list<string>}>
+     */
+    private function mcpServers(): array
+    {
+        $servers = [];
+
+        if (class_exists(\Laravel\Boost\BoostServiceProvider::class)) {
+            $servers['laravel-boost'] = ['command' => 'php', 'args' => ['artisan', 'boost:mcp']];
+        }
+
+        if ($this->projectRequires(['livewire/flux', 'livewire/flux-pro'])) {
+            $servers['fluxui-server'] = ['command' => 'npx', 'args' => ['-y', 'fluxui-mcp-server']];
+        }
+
+        return $servers;
+    }
+
+    /**
+     * Merge mcpServers() into each editor's project MCP config. Configs for
+     * Claude Code, Cursor and Gemini are created when missing; VS Code and
+     * Antigravity configs are only updated if the project already has them.
+     */
+    private function syncMcpConfigs(): void
+    {
+        $servers = $this->mcpServers();
+
+        // Gemini settings used to be a published stub; it is merged now.
+        unset($this->manifest['.gemini/settings.json']);
+
+        if ($servers === []) {
+            return;
+        }
+
+        $targets = [
+            '.mcp.json' => ['key' => 'mcpServers', 'create' => true],
+            '.cursor/mcp.json' => ['key' => 'mcpServers', 'create' => true],
+            '.gemini/settings.json' => ['key' => 'mcpServers', 'create' => true],
+            '.vscode/mcp.json' => ['key' => 'servers', 'create' => false],
+            '.agents/mcp_config.json' => ['key' => 'mcpServers', 'create' => false],
+        ];
+
+        foreach ($targets as $relative => ['key' => $key, 'create' => $create]) {
+            $path = $this->projectRoot.'/'.$relative;
+            $exists = File::exists($path);
+
+            if (! $exists && ! $create) {
+                continue;
+            }
+
+            $config = $exists ? json_decode(File::get($path), true) : [];
+
+            if (! is_array($config) || ! is_array($config[$key] ?? [])) {
+                $this->notices[] = "Skipped {$relative}: not valid JSON or unexpected `{$key}` shape.";
+
+                continue;
+            }
+
+            $current = $config[$key] ?? [];
+            $missing = array_diff_key($servers, $current);
+
+            if ($missing === []) {
+                $this->line("  <fg=gray>unchanged {$relative}</>", verbosity: 'v');
+
+                continue;
+            }
+
+            $config[$key] = $current + $missing;
+            File::ensureDirectoryExists(dirname($path));
+            File::put($path, json_encode($config, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES)."\n");
+
+            $label = $exists ? '<info>update</info>  ' : '<info>install</info> ';
+            $this->line("  {$label} {$relative} <fg=gray>(+ ".implode(', ', array_keys($missing)).')</>');
+            $this->stats[$exists ? 'updated' : 'installed']++;
+        }
+    }
+
+    /**
+     * @param  list<string>  $packages
+     */
+    private function projectRequires(array $packages): bool
+    {
+        $composerJson = json_decode((string) @file_get_contents($this->projectRoot.'/composer.json'), true) ?: [];
+        $require = ($composerJson['require'] ?? []) + ($composerJson['require-dev'] ?? []);
+
+        return array_intersect($packages, array_keys($require)) !== [];
     }
 
     private function pruneStaleMcpConfigs(): void

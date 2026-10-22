@@ -22,17 +22,36 @@ The installer will:
 
 1. **Prompt for credentials** — Flux Pro, Anthropic API key (press Enter to skip any)
 2. **Configure Supervisor** — sets `SUPERVISOR_WORKER` in `.env` for the deploy pipeline
-3. **Publish 28 AI agent skills** → `.agents/skills/` (with collision-safe upgrades — see below), mirrored to `.claude/skills/` when the project uses Claude Code (`.claude/` or `CLAUDE.md` present)
+3. **Publish 28 AI agent skills** → `.agents/skills/` (with collision-safe upgrades — see below), the one skills directory for every agent (see *One skills directory*)
 4. **Publish agent rules** → `.agents/rules/` (including the Zero FilamentPHP and React/FluxUI co-equal standard)
 5. **Install Night Shift** → `bin/night-shift` (autonomous issue solver with Brains-and-Hands Isolation)
-6. **Configure MCP** → `.gemini/settings.json` (Boost writes `.mcp.json` for Claude Code and `.cursor/mcp.json` for Cursor)
+6. **Configure MCP** → merges the shared servers into `.mcp.json` (Claude Code), `.cursor/mcp.json`, `.gemini/settings.json`, and `.vscode/mcp.json` / `.agents/mcp_config.json` when present (see *Shared MCP servers*)
 7. **Track ownership** → `.agents/.manifest.json` (gitignored) records which files we installed
 8. **Update `.gitignore`** with agent runtime files and an allowlist so only `.agents/rules/` and `.agents/skills/` are committed
 9. **Check Laravel Boost** → offers to run `boost:install` when the project has no `boost.json`
+10. **Refresh Laravel Boost** → runs `boost:update` at the end (skip with `--no-boost`), so one command rebuilds every agent folder
 
 ### Laravel Boost is required
 
-[Laravel Boost](https://github.com/laravel/boost) (a dependency of this package) owns the framework skills and guidelines — `laravel-best-practices`, `testing-best-practices`, `livewire-development`, `volt-development`, `fluxui-development`, `tailwindcss-development` — and writes them to `.cursor/skills/`, `.claude/skills/` and `AGENTS.md`. The skills here add workflow and architecture on top of Boost and never ship copies of Boost's skills. Run `php artisan boost:install` once per project (Boost only registers its commands when `APP_ENV=local` or `APP_DEBUG=true`).
+[Laravel Boost](https://github.com/laravel/boost) (a dependency of this package) owns the framework skills and guidelines — `laravel-best-practices`, `testing-best-practices`, `livewire-development`, `volt-development`, `fluxui-development`, `tailwindcss-development` — and writes guidelines to `AGENTS.md` / `CLAUDE.md`. The skills here add workflow and architecture on top of Boost and never ship copies of Boost's skills. Run `php artisan boost:install` once per project (Boost only registers its commands when `APP_ENV=local` or `APP_DEBUG=true`).
+
+### One skills directory
+
+`.agents/skills/` is the only place skills live — ours and Laravel Boost's:
+
+- **Cursor, Codex, Antigravity, OpenCode and Amp** read `.agents/skills/` natively. The package's service provider points Boost's Cursor skills path there (`boost.agents.cursor.skills_path`), so `.cursor/skills/` is no longer used.
+- **Claude Code** only reads `.claude/skills/`, so `agents:install` replaces it with a symlink to `../.agents/skills` and Boost's Claude Code path follows it. If symlinks are unavailable (e.g. Windows without Developer Mode), the package's skills are copied there instead.
+- On upgrade, existing `.cursor/skills/` and `.claude/skills/` folders are folded in: Boost's skills and duplicates are dropped (Boost rewrites them), anything else — your own skills — is moved into `.agents/skills/`.
+- Set `boost.agents.cursor.skills_path` / `boost.agents.claude_code.skills_path` in `config/boost.php` to opt out.
+
+### Shared MCP servers
+
+Every editor config gets the same servers; entries you already have with the same name are never overwritten:
+
+| Server | When |
+|--------|------|
+| `laravel-boost` (`php artisan boost:mcp`) | Laravel Boost is installed |
+| `fluxui-server` (`npx -y fluxui-mcp-server`) | `livewire/flux` or `livewire/flux-pro` is required |
 
 ### Re-run setup anytime
 
@@ -214,6 +233,13 @@ Features:
 Framework skills (`laravel-best-practices`, `testing-best-practices`, `livewire-development`, `volt-development`, `fluxui-development`, `tailwindcss-development`) come from Laravel Boost.
 
 ---
+
+## Major Changes in v2.3.0
+
+- **One skills directory.** `.agents/skills/` holds every skill (ours and Boost's). Boost's Cursor skills are redirected there, `.claude/skills` becomes a symlink to it, and existing `.cursor/skills` / `.claude/skills` folders are folded in on upgrade (user-authored skills are moved, never deleted).
+- **Shared MCP servers.** `laravel-boost` and, for Flux projects, `fluxui-server` are merged into the Claude Code, Cursor, Gemini (and existing VS Code / Antigravity) MCP configs. Replaces the published `.gemini/settings.json` stub.
+- **`agents:install` runs `boost:update`** at the end (`--no-boost` to skip), so a single command rebuilds `.agents`, `.claude`, `.cursor` skills and `.gemini` from scratch. `agents:update` delegates to it.
+- `*filament*` pruning and the retired-skill cleanup no longer touch Boost's skills now that they share `.agents/skills/`.
 
 ## Major Changes in v2.2.1
 

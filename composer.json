@@ -1,6 +1,6 @@
 {
     "name": "joranski/agents",
-    "version": "2.2.1",
+    "version": "2.3.0",
     "description": "AI agent skills, smart deploy (git:pull), safe push (git:push), and Night Shift automation for Laravel projects.",
     "keywords": ["laravel", "agents", "deploy", "git", "ai", "react", "fluxui", "livewire", "volt", "skills"],
     "license": "MIT",
