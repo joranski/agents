@@ -1,6 +1,6 @@
 ---
 name: agents-md
-description: "Generate, audit, and maintain ultra-compact AGENTS.md files (<120 lines). Acts as a high-signal router pointing to skills and shared runners, with protected Boost markers, 1-line tool pointers, and Zero FilamentPHP (React / FluxUI co-equal)."
+description: "Generate, audit, and maintain ultra-compact AGENTS.md files (<120 lines). Acts as a high-signal router pointing to skills and shared runners, with protected Boost markers, 1-line tool pointers, and Zero FilamentPHP (FluxUI default, React for client-heavy and mobile)."
 license: MIT
 source: getsentry/skills
 canonical: false
@@ -20,7 +20,7 @@ Treat `AGENTS.md` strictly as a high-signal router pointing to `.agents/skills/`
 1. **Router Architecture:** Link to `.agents/skills/<name>/SKILL.md` and `.agents/skills/_shared/test-runner.md`.
 2. **Protected Boost Markers:** Preserve `<!-- BOOST_START --> ... <!-- BOOST_END -->` blocks untouched.
 3. **1-Line Tool Pointers:** Support `CLAUDE.md` and `.cursorrules` with 1-line pointers to `AGENTS.md`.
-4. **Zero FilamentPHP & Co-Equal UI:** Mandate React (TS + Radix/Shadcn + Tailwind) or Livewire/Volt + FluxUI. Auto-detect stack: `package.json` (React) vs `composer.json` (Livewire/Flux).
+4. **Zero FilamentPHP & UI Hierarchy:** Livewire/Volt + FluxUI is the default; list React (TS + Radix/Shadcn + Tailwind) only when `package.json` has `react`, the user asked for React / Next.js / React Native, or a feature needs heavy client-side state (see `.agents/rules/guidelines.md`).
 5. **Testing Override:** Never run full test suites mid-iteration; strictly follow `.agents/skills/_shared/test-runner.md` (`pest --dirty --stop-on-failure --compact` or single-file runners).
 
 ## Required Sections (<120 Lines Total)

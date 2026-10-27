@@ -23,7 +23,7 @@ The installer will:
 1. **Prompt for credentials** — Flux Pro, Anthropic API key (press Enter to skip any)
 2. **Configure Supervisor** — sets `SUPERVISOR_WORKER` in `.env` for the deploy pipeline
 3. **Publish 28 AI agent skills** → `.agents/skills/` (with collision-safe upgrades — see below), the one skills directory for every agent (see *One skills directory*)
-4. **Publish agent rules** → `.agents/rules/` (including the Zero FilamentPHP and React/FluxUI co-equal standard)
+4. **Publish agent rules** → `.agents/rules/` (Zero FilamentPHP, FluxUI primary default with a React specialized track, surgical testing)
 5. **Install Night Shift** → `bin/night-shift` (autonomous issue solver with Brains-and-Hands Isolation)
 6. **Configure MCP** → merges the shared servers into `.mcp.json` (Claude Code), `.cursor/mcp.json`, `.gemini/settings.json`, and `.vscode/mcp.json` / `.agents/mcp_config.json` when present (see *Shared MCP servers*)
 7. **Track ownership** → `.agents/.manifest.json` (gitignored) records which files we installed
@@ -34,6 +34,13 @@ The installer will:
 ### Laravel Boost is required
 
 [Laravel Boost](https://github.com/laravel/boost) (a dependency of this package) owns the framework skills and guidelines — `laravel-best-practices`, `testing-best-practices`, `livewire-development`, `volt-development`, `fluxui-development`, `tailwindcss-development` — and writes guidelines to `AGENTS.md` / `CLAUDE.md`. The skills here add workflow and architecture on top of Boost and never ship copies of Boost's skills. Run `php artisan boost:install` once per project (Boost only registers its commands when `APP_ENV=local` or `APP_DEBUG=true`).
+
+### Frontend stack: FluxUI primary default, React for client-heavy & mobile
+
+Filament is never installed (**Zero FilamentPHP**). Beyond that, agents follow one opinionated hierarchy:
+
+- **Default — Livewire + Volt + FluxUI + Tailwind CSS** for every Laravel web app, admin panel, CRUD table, modal, form, and dashboard. Single-file components keep the token footprint small, `pest --dirty` stays fast, and there is no client/server state to keep in sync. Skills: `flux-admin-crud` plus Boost's `fluxui-development` / `volt-development`.
+- **Specialized track — React (TypeScript + Tailwind + Shadcn/Radix)**, first-class via `react-development`, chosen only when `package.json` already requires `react`, the user explicitly asks for React / Next.js / React Native (phone apps), or a feature needs heavy 60fps client-side state (canvas, timeline or video editors, drag-and-drop node graphs, offline-first local storage).
 
 ### One skills directory
 
@@ -217,7 +224,7 @@ Features:
 | `agents-md` | Generate and maintain ultra-compact `AGENTS.md` (<120 lines) following the 80% System Prompt Shrink Rule |
 | `package-extraction-scout` | Identify mature services that should become standalone Composer packages |
 | `harden-logic` | Scaffold ROP + Specification + FSM architecture for stateful workflows with mandatory 50% Complexity Cut Gate |
-| `polyglot-architecture` | Standards for Phone Apps (SwiftUI/Compose/RN), Web (React & FluxUI co-equal), Systems (Rust/Go), and Python offload |
+| `polyglot-architecture` | Standards for Phone Apps (SwiftUI/Compose/RN), Web (FluxUI default, React for client-heavy features), Systems (Rust/Go), and Python offload |
 | `system-cli-and-bash` | DHH's Golden Bash Rule (explicit `if/then/fi`), cross-platform PowerShell/Bash, and malleable plugins |
 | `mcp-builder` | Build Model Context Protocol servers (bundled, defers to `anthropics/skills`) |
 | `webapp-testing` | Test web apps with Playwright at the agent level (bundled, defers to `anthropics/skills`) |
@@ -231,12 +238,16 @@ Features:
 ### Domain (Laravel, React & Web)
 | Skill | Purpose |
 |-------|---------|
-| `react-development` | Modern React 19+ / TypeScript development (Inertia v2 & Next.js) — co-equal with FluxUI with `react-crud-stub.tsx` |
-| `flux-admin-crud` | Admin screens (table, search, modal forms) in Livewire/Volt + Flux — co-equal with React, enforces Zero FilamentPHP, Filament replacement guide and `flux-crud-stub.blade.php`. Uses Boost's `fluxui-development` for component APIs |
+| `react-development` | Specialized React 19+ / TypeScript track (Inertia v2, Next.js, React Native) for existing React projects, explicit requests, and client-heavy features — with `react-crud-stub.tsx` |
+| `flux-admin-crud` | Admin screens (table, search, modal forms) in Livewire/Volt + Flux — the default web UI, enforces Zero FilamentPHP, Filament replacement guide and `flux-crud-stub.blade.php`. Uses Boost's `fluxui-development` for component APIs |
 
 Framework skills (`laravel-best-practices`, `testing-best-practices`, `livewire-development`, `volt-development`, `fluxui-development`, `tailwindcss-development`) come from Laravel Boost.
 
 ---
+
+## Major Changes in v2.4.2
+
+- **FluxUI primary default, React specialized track.** The frontend rule moves from "co-equal stacks" to a hierarchy: Livewire + Volt + FluxUI for all Laravel web UI by default; React only when the project already uses it, the user asks for React / Next.js / React Native, or a feature needs heavy client-side state. Updated in `rules/guidelines.md`, `agents-md`, `polyglot-architecture`, and `react-development`. Zero FilamentPHP is unchanged.
 
 ## Major Changes in v2.4.1
 

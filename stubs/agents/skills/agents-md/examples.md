@@ -9,7 +9,7 @@
 
 ## Stack & Architecture
 - **Backend:** PHP 8.4, Laravel 12 (or Node 22 / Next.js 15)
-- **UI Architecture:** React 19 (TypeScript + Tailwind CSS + Radix/Shadcn UI via Inertia v2 / Next.js) OR Livewire 4 / Volt 1 + Flux UI Pro (**Zero FilamentPHP standard**)
+- **UI Architecture:** Livewire 4 / Volt 1 + Flux UI Pro + Tailwind CSS (**Zero FilamentPHP standard**). React 19 (TypeScript + Tailwind + Radix/Shadcn via Inertia v2) only for <client-heavy feature, e.g. the timeline editor> — delete this clause if none.
 - **Data & Cache:** PostgreSQL 16, Redis 7
 - **Testing:** Pest 4, Vitest, Playwright
 
@@ -28,10 +28,10 @@ php artisan git:push
 ```
 
 ## Conventions
-1. **Zero FilamentPHP (Co-Equal Stacks):** Build all admin views, tables, and modals with React (Radix/Shadcn + Tailwind) or Livewire Volt + Flux UI (`<flux:table>`, `<flux:modal>`). Never install Filament.
-2. **Auto-Detect UI Stack:** Apply `react-development` if `package.json` contains `react`; apply `flux-admin-crud` (screens) with Boost's `fluxui-development` (components) if `composer.json` contains `livewire/flux`.
-2. **ROP & Logic:** Stateful multi-step workflows use `harden-logic` `Result` pipelines (`app/Architecture/Support/Result.php`).
-3. **Surgical Testing:** Run dirty diffs or single test methods during iteration; full suite runs only on push.
+1. **FluxUI by Default, Zero FilamentPHP:** Build admin views, tables, modals, forms, and dashboards with Livewire Volt + Flux UI (`<flux:table>`, `<flux:modal>`) via `flux-admin-crud` and Boost's `fluxui-development`. Never install Filament.
+2. **React Only When Triggered:** Use `react-development` only if `package.json` already requires `react`, React / Next.js / React Native was explicitly requested, or the feature needs heavy 60fps client state (canvas, timeline, node graph, offline-first).
+3. **ROP & Logic:** Stateful multi-step workflows use `harden-logic` `Result` pipelines (`app/Architecture/Support/Result.php`).
+4. **Surgical Testing:** Run dirty diffs or single test methods during iteration; full suite runs only on push.
 
 <!-- BOOST_START -->
 ## Laravel Boost Guidelines

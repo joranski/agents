@@ -1,6 +1,6 @@
 ---
 name: polyglot-architecture
-description: "Architectural standards across Phone Apps (SwiftUI, Compose, React Native), Web Apps (React/Inertia/Next.js & Livewire/FluxUI co-equal), Systems/CLI (Rust, Go), and Python hot-path offload."
+description: "Architectural standards across Phone Apps (SwiftUI, Compose, React Native), Web Apps (Livewire/Volt + FluxUI by default, React for client-heavy features), Systems/CLI (Rust, Go), and Python hot-path offload."
 source: joranski/agents
 canonical: true
 ---
@@ -14,8 +14,9 @@ Engineering standards across mobile, web, systems, and scripting domains.
 - **Offline-First:** Mutations append to local journal (SQLite / WatermelonDB); sync asynchronously.
 - **Battery & RAM Discipline:** Never poll in background loops; use push triggers and ephemeral tasks.
 
-## 2. Web Apps (React & Livewire Co-Equal Parity)
-- **Zero FilamentPHP:** Build all admin/table UIs using either React (TS + Tailwind + Radix/Shadcn via Inertia v2 / Next.js) or Livewire/Volt + FluxUI. Auto-detect via `package.json` vs `composer.json`.
+## 2. Web Apps (FluxUI Primary Default / React Specialized Track)
+- **Default:** Livewire + Volt + FluxUI + Tailwind for Laravel web apps, admin panels, tables, modals, forms, dashboards (`flux-admin-crud`). **Zero FilamentPHP.**
+- **React track** (`react-development`) only when `package.json` already requires `react`, the user asks for React / Next.js / React Native, or the feature needs heavy 60fps client state (canvas/timeline editors, node graphs, offline-first).
 - **ROP Pipelines:** Complex mutations route through `harden-logic` `Result` pipelines (`Result.php` / `Result.ts`).
 - **Lean State:** Avoid client state bloat, unneeded contexts, and `useEffect` waterfalls.
 

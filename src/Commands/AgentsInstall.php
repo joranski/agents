@@ -23,7 +23,7 @@ class AgentsInstall extends Command
 
     private const PACKAGE_NAME = 'joranski/agents';
 
-    private const PACKAGE_VERSION = '2.4.1';
+    private const PACKAGE_VERSION = '2.4.2';
 
     /** Every agent that supports it reads skills from here; `.claude/skills` links to it. */
     private const CENTRAL_SKILLS_PATH = '.agents/skills';
