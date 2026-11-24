@@ -5,6 +5,8 @@ namespace Joranski\Agents\Commands;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Process;
+use InvalidArgumentException;
+use Joranski\Agents\Sync\AgentSync;
 use Laravel\Boost\BoostServiceProvider;
 use Laravel\Prompts;
 
@@ -14,7 +16,10 @@ class AgentsInstall extends Command
                             {--force : Overwrite files we own (source matches), even if hand-edited; do not touch files owned by other packages}
                             {--force-all : Overwrite EVERYTHING including files owned by other packages (dangerous, legacy behavior)}
                             {--skills : Only install/update skills}
-                            {--no-prune : Do not prune deprecated v1.x skills or stale configs}
+                            {--no-prune : Do not prune skills and rules this package no longer ships, or stale configs}
+                            {--with= : Comma-separated optional skills to sync (see optional/ in joranski/agents)}
+                            {--ui-rule : Manage .cursor/rules/ui-design.mdc (never replaces a host-owned file)}
+                            {--profile= : ui-design profile: storefront-admin or admin-only}
                             {--setup : Run interactive credentials & environment wizard}
                             {--no-setup : Never ask to run the credentials & environment wizard}
                             {--no-boost : Do not run boost:update after installing}';
@@ -23,46 +28,12 @@ class AgentsInstall extends Command
 
     private const PACKAGE_NAME = 'joranski/agents';
 
-    private const PACKAGE_VERSION = '2.4.2';
+    private const PACKAGE_VERSION = '3.0.0';
 
     /** Every agent that supports it reads skills from here; `.claude/skills` links to it. */
     private const CENTRAL_SKILLS_PATH = '.agents/skills';
 
     private const MANIFEST_RELATIVE_PATH = '.agents/.manifest.json';
-
-    /**
-     * Skills this package used to bundle as copies of Laravel Boost's. Boost
-     * installs and refreshes the canonical versions, so ours are removed from
-     * `.agents/skills/` on upgrade (never from Boost's `.cursor/` / `.claude/` dirs).
-     */
-    private const RETIRED_BOOST_SKILLS = [
-        'laravel-best-practices',
-        'fluxui-development',
-        'tailwindcss-development',
-        'volt-development',
-        'pest-testing',
-    ];
-
-    /**
-     * Files earlier versions published inside skills that are still shipped.
-     * They are removed on upgrade unless edited after install. Paths are
-     * relative to the skills directory.
-     */
-    private const RETIRED_SKILL_FILES = [
-        'systematic-debugging/CREATION-LOG.md',
-        'systematic-debugging/test-academic.md',
-        'systematic-debugging/test-pressure-1.md',
-        'systematic-debugging/test-pressure-2.md',
-        'systematic-debugging/test-pressure-3.md',
-        'systematic-debugging/root-cause-tracing.md',
-        'systematic-debugging/defense-in-depth.md',
-        'systematic-debugging/condition-based-waiting.md',
-        'systematic-debugging/condition-based-waiting-example.ts',
-        'systematic-debugging/find-polluter.sh',
-        'writing-skills/graphviz-conventions.dot',
-        'writing-skills/render-graphs.js',
-        'writing-skills/persuasion-principles.md',
-    ];
 
     /** @var array<string, array{sha256: string, source: ?string, canonical: ?bool, installed_at: string}> */
     private array $manifest = [];
@@ -76,7 +47,7 @@ class AgentsInstall extends Command
         'installed' => 0,           // file did not exist; we wrote it
         'updated' => 0,             // file existed and was ours-untouched; we upgraded it
         'unchanged' => 0,           // file already matches what we'd write; no-op
-        'pruned' => 0,              // deprecated v1 skills or stale configs deleted
+        'pruned' => 0,              // retired skills/rules or stale configs deleted
         'deferred_owner' => 0,      // file owned by a different package; left alone
         'deferred_canonical' => 0,  // existing file marked canonical=true while ours is canonical=false
         'deferred_user_edited' => 0, // our file was modified after we installed it
@@ -106,9 +77,10 @@ class AgentsInstall extends Command
             $this->components->warn('--force-all will overwrite files owned by OTHER packages. This is rarely correct.');
         }
 
-        // ── Deprecated v1.x Skills & Stale Configs Pruning ──────────
+        // ── Stale config pruning (skills and rules are pruned by AgentSync) ──
         if ($prune) {
-            $this->pruneDeprecatedSkillsAndConfigs();
+            $this->pruneLegacyClaudeJson();
+            $this->pruneStaleMcpConfigs();
         }
 
         $this->ensureBoostIsConfigured();
@@ -125,12 +97,11 @@ class AgentsInstall extends Command
             $this->newLine();
             $this->components->info('Agent Skills & Rules');
 
-            $this->publishDirectory(
-                $stubsPath.'/agents',
-                $this->projectRoot.'/.agents',
-            );
+            $this->centralizeSkills();
 
-            $this->centralizeSkills($stubsPath.'/agents/skills');
+            if ($this->syncSkillsAndRules($prune) === self::FAILURE) {
+                return self::FAILURE;
+            }
         }
 
         // ── Night Shift ─────────────────────────────────────────────
@@ -164,7 +135,7 @@ class AgentsInstall extends Command
         $this->saveManifest();
 
         // ── Summary ─────────────────────────────────────────────────
-        $this->renderSummary($stubsPath.'/agents/skills');
+        $this->renderSummary();
 
         if ($this->option('no-boost')) {
             return self::SUCCESS;
@@ -196,6 +167,45 @@ class AgentsInstall extends Command
         return $this->call('boost:update', ['--no-discover' => true]);
     }
 
+    /**
+     * Skills, rules, and the optional ui-design rule go through the same
+     * engine as `vendor/bin/sync-agents`, so both paths behave identically.
+     */
+    private function syncSkillsAndRules(bool $prune): int
+    {
+        $with = $this->option('with');
+
+        try {
+            $result = (new AgentSync(dirname(__DIR__, 2), $this->projectRoot, [
+                'force' => (bool) $this->option('force') || (bool) $this->option('force-all'),
+                'prune' => $prune,
+                'with' => $with !== null ? array_filter(array_map('trim', explode(',', $with))) : null,
+                'ui_rule' => $this->option('ui-rule') ? true : null,
+                'profile' => $this->option('profile'),
+            ]))->run();
+        } catch (InvalidArgumentException $e) {
+            $this->components->error($e->getMessage());
+
+            return self::FAILURE;
+        }
+
+        $map = ['add' => 'installed', 'update' => 'updated', 'force' => 'force_overwritten', 'prune' => 'pruned', 'keep' => 'deferred_user_edited', 'skip' => 'deferred_owner', 'unchanged' => 'unchanged'];
+
+        foreach ($result['actions'] as ['action' => $action, 'path' => $path, 'note' => $note]) {
+            if (isset($map[$action])) {
+                $this->stats[$map[$action]]++;
+            }
+
+            if ($action !== 'unchanged') {
+                $this->line(sprintf('  %-9s %s%s', $action, $path, $note !== '' ? " <fg=gray>({$note})</>" : ''));
+            }
+        }
+
+        array_push($this->notices, ...$result['notices']);
+
+        return self::SUCCESS;
+    }
+
     // ─────────────────────────────────────────────────────────────────
     // Manifest
     // ─────────────────────────────────────────────────────────────────
@@ -215,12 +225,24 @@ class AgentsInstall extends Command
 
     private function saveManifest(): void
     {
+        $files = array_filter(
+            $this->manifest,
+            fn ($key) => ! preg_match('#^\.(agents/skills|agents/rules|claude/skills)/#', (string) $key),
+            ARRAY_FILTER_USE_KEY,
+        );
+
+        if ($files === []) {
+            File::delete($this->manifestPath);
+
+            return;
+        }
+
         $payload = [
             'version' => 1,
             'package' => self::PACKAGE_NAME,
             'package_version' => self::PACKAGE_VERSION,
             'updated_at' => date('c'),
-            'files' => $this->manifest,
+            'files' => $files,
         ];
 
         File::ensureDirectoryExists(dirname($this->manifestPath));
@@ -278,22 +300,6 @@ class AgentsInstall extends Command
     // ─────────────────────────────────────────────────────────────────
     // Publish
     // ─────────────────────────────────────────────────────────────────
-
-    private function publishDirectory(string $source, string $destination): void
-    {
-        if (! File::isDirectory($source)) {
-            $this->components->warn("Source not found: {$source}");
-
-            return;
-        }
-
-        foreach (File::allFiles($source) as $file) {
-            $this->publishFile(
-                $file->getRealPath(),
-                $destination.'/'.$file->getRelativePathname(),
-            );
-        }
-    }
 
     private function publishFile(string $source, string $target): void
     {
@@ -428,7 +434,7 @@ class AgentsInstall extends Command
     // Summary
     // ─────────────────────────────────────────────────────────────────
 
-    private function renderSummary(string $skillsStubPath): void
+    private function renderSummary(): void
     {
         $this->newLine();
         $this->line(str_repeat('─', 60));
@@ -437,9 +443,9 @@ class AgentsInstall extends Command
             ['installed', $this->stats['installed'], 'new files written'],
             ['updated', $this->stats['updated'], 'upgraded from prior install'],
             ['unchanged', $this->stats['unchanged'], 'already current'],
-            ['pruned', $this->stats['pruned'], 'deprecated v1 skills or stale configs removed'],
+            ['pruned', $this->stats['pruned'], 'retired skills/rules or stale configs removed'],
             ['preserved', $this->stats['deferred_user_edited'], 'local edits kept (re-run with --force to overwrite)'],
-            ['deferred', $this->stats['deferred_owner'], 'owned by another package'],
+            ['skipped', $this->stats['deferred_owner'], 'host-owned or owned by another package'],
             ['deferred', $this->stats['deferred_canonical'], 'existing canonical copy beats our bundled version'],
             ['forced', $this->stats['force_overwritten'], 'overwritten via --force / --force-all'],
         ];
@@ -459,139 +465,19 @@ class AgentsInstall extends Command
             }
         }
 
-        $skillCount = count(array_filter(File::directories($skillsStubPath), fn ($d) => basename($d) !== '_shared'));
-
         $this->newLine();
         $this->components->bulletList([
-            "Skills: .agents/skills/ ({$skillCount} joranski/agents skills, ".self::PACKAGE_VERSION.', alongside Laravel Boost\'s)',
-            'Manifest: .agents/.manifest.json (tracks ownership for safe upgrades)',
+            'Skills & rules: .agents/ (manifest: '.AgentSync::MANIFEST.', commit it)',
+            'Preview changes: vendor/bin/sync-agents --dry-run',
+            'Optional skills: php artisan agents:install --skills --with=git-push',
             'Commands: php artisan git:pull, git:push, agents:update',
             'Re-run setup: php artisan agents:install --setup',
-            'Update & prune: php artisan agents:update',
-            'Force-update local edits: php artisan agents:install --skills --force',
         ]);
     }
 
     // ─────────────────────────────────────────────────────────────────
     // Prune Deprecated Skills & Stale Configs
     // ─────────────────────────────────────────────────────────────────
-
-    private function pruneDeprecatedSkillsAndConfigs(): void
-    {
-        $this->pruneDeprecatedSkills();
-        $this->pruneRetiredBoostSkills();
-        $this->pruneRetiredSkillFiles();
-        $this->pruneLegacyClaudeJson();
-        $this->pruneStaleMcpConfigs();
-    }
-
-    /**
-     * Delete RETIRED_SKILL_FILES from the central skills directory and from a
-     * copied (non-symlinked) `.claude/skills` mirror. A file is only deleted
-     * when it is ours and still matches the checksum recorded at install.
-     */
-    private function pruneRetiredSkillFiles(): void
-    {
-        $roots = [self::CENTRAL_SKILLS_PATH];
-
-        if (File::isDirectory($this->projectRoot.'/.claude/skills') && ! is_link($this->projectRoot.'/.claude/skills')) {
-            $roots[] = '.claude/skills';
-        }
-
-        foreach ($roots as $root) {
-            foreach (self::RETIRED_SKILL_FILES as $file) {
-                $relative = $root.'/'.$file;
-                $path = $this->projectRoot.'/'.$relative;
-
-                if (! File::isFile($path)) {
-                    continue;
-                }
-
-                $entry = $this->manifest[$relative] ?? null;
-
-                if ($entry === null && ! $this->isOwnedByUs(dirname($path))) {
-                    continue;
-                }
-
-                if ($entry !== null && $entry['sha256'] !== hash_file('sha256', $path)) {
-                    $this->notices[] = "Kept {$relative} (edited locally). It is no longer shipped; delete it once your edits are moved.";
-
-                    continue;
-                }
-
-                File::delete($path);
-                unset($this->manifest[$relative]);
-
-                $this->line("  <fg=yellow>pruned</fg=yellow>   {$relative} <fg=gray>(retired skill file)</>");
-                $this->stats['pruned']++;
-            }
-        }
-    }
-
-    /**
-     * Remove our old bundled copies of Boost skills from `.agents/skills/`.
-     * A copy is only deleted when it is marked `bundled_by: joranski/agents`
-     * and no file in it was edited after we installed it.
-     */
-    private function pruneRetiredBoostSkills(): void
-    {
-        $root = $this->projectRoot.'/.agents/skills';
-
-        foreach (self::RETIRED_BOOST_SKILLS as $name) {
-            $dir = $root.'/'.$name;
-
-            if (! File::isDirectory($dir)) {
-                continue;
-            }
-
-            $relativeKey = '.agents/skills/'.$name;
-            $bundledByUs = ($this->readFrontmatter($dir.'/SKILL.md')['bundled_by'] ?? null) === self::PACKAGE_NAME;
-
-            // Boost writes its own copy of this skill here now; only ours goes.
-            if (! $bundledByUs) {
-                continue;
-            }
-
-            if ($this->hasLocalEdits($dir)) {
-                $this->notices[] = "Kept {$relativeKey} (edited locally). Laravel Boost now provides {$name}; delete it manually once your edits are moved.";
-
-                continue;
-            }
-
-            File::deleteDirectory($dir);
-
-            foreach (array_keys($this->manifest) as $key) {
-                if (str_starts_with($key, $relativeKey.'/')) {
-                    unset($this->manifest[$key]);
-                }
-            }
-
-            $this->line("  <fg=yellow>pruned</fg=yellow>   {$relativeKey} <fg=gray>(provided by Laravel Boost)</>");
-            $this->stats['pruned']++;
-        }
-    }
-
-    /**
-     * Whether this package installed the skill at $dir (manifest entry or frontmatter marker).
-     */
-    private function isOwnedByUs(string $dir): bool
-    {
-        $frontmatter = $this->readFrontmatter($dir.'/SKILL.md');
-
-        if (($frontmatter['source'] ?? null) === self::PACKAGE_NAME || ($frontmatter['bundled_by'] ?? null) === self::PACKAGE_NAME) {
-            return true;
-        }
-
-        $prefix = $this->manifestKey($dir).'/';
-
-        foreach (array_keys($this->manifest) as $key) {
-            if (str_starts_with($key, $prefix)) {
-                return true;
-            }
-        }
-
-        return false;
-    }
 
     // ─────────────────────────────────────────────────────────────────
     // Central skills directory
@@ -603,7 +489,7 @@ class AgentsInstall extends Command
      * Boost's Cursor (and linked Claude Code) skills there. Claude Code only
      * reads `.claude/skills/`, so that becomes a symlink to the central dir.
      */
-    private function centralizeSkills(string $skillsStubPath): void
+    private function centralizeSkills(): void
     {
         $this->absorbSkillDirectory('.cursor/skills');
 
@@ -619,8 +505,8 @@ class AgentsInstall extends Command
             return;
         }
 
-        $this->notices[] = 'Could not symlink .claude/skills to '.self::CENTRAL_SKILLS_PATH.' (e.g. Windows without symlink rights); copying skills there instead.';
-        $this->mirrorSkillsForClaudeCode($skillsStubPath);
+        File::ensureDirectoryExists($this->projectRoot.'/.claude/skills');
+        $this->notices[] = 'Could not symlink .claude/skills to '.self::CENTRAL_SKILLS_PATH.' (e.g. Windows without symlink rights); the sync mirrors skills there instead.';
     }
 
     /**
@@ -704,20 +590,6 @@ class AgentsInstall extends Command
     }
 
     /**
-     * Fallback when `.claude/skills` cannot be a symlink: copy our skills there.
-     */
-    private function mirrorSkillsForClaudeCode(string $skillsStubPath): void
-    {
-        foreach (File::directories($skillsStubPath) as $skillDir) {
-            if (basename($skillDir) === '_shared') {
-                continue;
-            }
-
-            $this->publishDirectory($skillDir, $this->projectRoot.'/.claude/skills/'.basename($skillDir));
-        }
-    }
-
-    /**
      * The v2.1 `claude.json` stub pointed at a non-existent `php artisan mcp`
      * command, and Claude Code reads `.mcp.json` (written by Boost) instead.
      */
@@ -741,22 +613,6 @@ class AgentsInstall extends Command
 
         $this->line('  <fg=yellow>pruned</fg=yellow>   claude.json <fg=gray>(unused stub; Claude Code reads .mcp.json)</>');
         $this->stats['pruned']++;
-    }
-
-    /**
-     * Whether any file under $dir differs from the checksum we recorded at install.
-     */
-    private function hasLocalEdits(string $dir): bool
-    {
-        foreach (File::allFiles($dir) as $file) {
-            $entry = $this->manifest[$this->manifestKey($file->getPathname())] ?? null;
-
-            if ($entry !== null && $entry['sha256'] !== hash_file('sha256', $file->getPathname())) {
-                return true;
-            }
-        }
-
-        return false;
     }
 
     // ─────────────────────────────────────────────────────────────────
@@ -795,68 +651,6 @@ class AgentsInstall extends Command
         }
 
         $this->notices[] = 'Laravel Boost is not configured. Run `php artisan boost:install` — it provides the framework skills these skills build on.';
-    }
-
-    private function pruneDeprecatedSkills(): void
-    {
-        $skillRoots = [
-            $this->projectRoot.'/.agents/skills',
-            $this->projectRoot.'/.cursor/skills',
-            $this->projectRoot.'/.claude/skills',
-        ];
-
-        $deprecatedNames = [
-            'using-superpowers',
-            'requesting-code-review',
-            'receiving-code-review',
-            'blueprint-code-review',
-        ];
-
-        $prunedAny = false;
-        $ownRoot = $this->projectRoot.'/.agents/skills';
-        $boostSkills = $this->boostTrackedSkills();
-
-        foreach ($skillRoots as $root) {
-            if (! File::isDirectory($root)) {
-                continue;
-            }
-
-            foreach (File::directories($root) as $dir) {
-                $name = basename($dir);
-
-                // *filament* skills may belong to Boost or Filament itself — even
-                // inside .agents/skills, which Boost now writes to as well.
-                $isDeprecated = in_array($name, $deprecatedNames, true)
-                    || (str_contains(strtolower($name), 'filament')
-                        && ($this->isOwnedByUs($dir) || ($root === $ownRoot && ! in_array($name, $boostSkills, true))));
-
-                if (! $isDeprecated) {
-                    continue;
-                }
-
-                if (! $prunedAny) {
-                    $this->newLine();
-                    $this->components->info('Pruning Deprecated v1.x Skills & Configs');
-                    $prunedAny = true;
-                }
-
-                File::deleteDirectory($dir);
-
-                $relative = ltrim(str_replace($this->projectRoot, '', $dir), '/\\');
-                $relativeKey = str_replace('\\', '/', $relative);
-
-                // Clean up manifest entries for this pruned directory
-                foreach (array_keys($this->manifest) as $key) {
-                    if (str_starts_with($key, $relativeKey.'/') || $key === $relativeKey) {
-                        unset($this->manifest[$key]);
-                    }
-                }
-
-                $this->line("  <fg=yellow>pruned</fg=yellow>   {$relativeKey} <fg=gray>(deprecated v1 skill)</>");
-                $this->stats['pruned']++;
-                $this->notices[] = "Pruned deprecated v1 skill: {$relativeKey}";
-            }
-        }
     }
 
     // ─────────────────────────────────────────────────────────────────

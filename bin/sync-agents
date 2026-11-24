@@ -1,0 +1,111 @@
+#!/usr/bin/env php
+<?php
+
+use Joranski\Agents\Sync\AgentSync;
+
+require __DIR__.'/../src/Sync/AgentSync.php';
+
+const USAGE = <<<'TXT'
+Usage: sync-agents [options]
+
+Sync joranski/agents skills and rules into a host repo (idempotent, manifest-tracked).
+
+  --target=DIR        Host repo (default: git toplevel of the current directory)
+  --source=DIR        joranski/agents checkout (default: the repo containing this script)
+  --dry-run           Show what would be added, updated, or pruned; write nothing
+  --with=a,b          Also sync these optional skills (remembered for later runs)
+  --without=a,b       Stop syncing these optional skills (untouched copies are pruned)
+  --ui-rule           Manage .cursor/rules/ui-design.mdc (never replaces a host-owned file)
+  --no-ui-rule        Stop managing it (an untouched copy is pruned)
+  --profile=NAME      ui-design profile: storefront-admin | admin-only (implies --ui-rule)
+  --init              New repo: also create AGENTS.md and CLAUDE.md if missing, and the ui rule
+  --force             Overwrite package files you edited locally (never host-owned files)
+  --no-prune          Do not remove files the package no longer ships
+  -v, --verbose       Also list unchanged files
+  -h, --help          Show this help
+
+TXT;
+
+$options = ['dry_run' => false, 'force' => false, 'prune' => true, 'with' => null, 'without' => [], 'ui_rule' => null, 'profile' => null, 'init' => false];
+$target = null;
+$source = dirname(__DIR__);
+$verbose = false;
+
+foreach (array_slice($argv, 1) as $arg) {
+    [$flag, $value] = array_pad(explode('=', $arg, 2), 2, null);
+
+    $list = fn () => array_values(array_filter(array_map('trim', explode(',', (string) $value))));
+
+    match ($flag) {
+        '--target' => $target = $value,
+        '--source' => $source = $value,
+        '--dry-run' => $options['dry_run'] = true,
+        '--force' => $options['force'] = true,
+        '--no-prune' => $options['prune'] = false,
+        '--with' => $options['with'] = $list(),
+        '--without' => $options['without'] = $list(),
+        '--ui-rule' => $options['ui_rule'] = true,
+        '--no-ui-rule' => $options['ui_rule'] = false,
+        '--profile' => $options['profile'] = $value,
+        '--init' => $options['init'] = true,
+        '-v', '--verbose' => $verbose = true,
+        '-h', '--help' => exit(fwrite(STDOUT, USAGE) ? 0 : 0),
+        default => exit(fwrite(STDERR, "Unknown option: {$arg}\n\n".USAGE) ? 1 : 1),
+    };
+}
+
+if ($options['with'] !== null && $options['without'] !== []) {
+    $options['with'] = array_values(array_diff($options['with'], $options['without']));
+}
+
+if ($target === null) {
+    $toplevel = trim((string) shell_exec('git rev-parse --show-toplevel 2>/dev/null'));
+    $target = $toplevel !== '' ? $toplevel : getcwd();
+}
+
+try {
+    $result = (new AgentSync($source, $target, $options))->run();
+} catch (InvalidArgumentException $e) {
+    fwrite(STDERR, 'sync-agents: '.$e->getMessage()."\n");
+    exit(1);
+}
+
+$color = stream_isatty(STDOUT);
+$paint = fn (string $text, string $code) => $color ? "\033[{$code}m{$text}\033[0m" : $text;
+$styles = ['add' => '32', 'create' => '32', 'update' => '36', 'force' => '33', 'prune' => '33', 'keep' => '35', 'skip' => '90', 'unchanged' => '90'];
+
+echo 'joranski/agents sync '.$result['version'].($result['dry_run'] ? ' '.$paint('(dry run: nothing written)', '33') : '')."\n";
+echo '  target: '.realpath($target)."\n\n";
+
+foreach ($result['actions'] as ['action' => $action, 'path' => $path, 'note' => $note]) {
+    if ($action === 'unchanged' && ! $verbose) {
+        continue;
+    }
+
+    printf("  %s %s%s\n", $paint(str_pad($action, 9), $styles[$action]), $path, $note !== '' ? $paint("  ({$note})", '90') : '');
+}
+
+$c = $result['counts'];
+$parts = [];
+foreach (['add' => 'added', 'create' => 'created', 'update' => 'updated', 'force' => 'forced', 'prune' => 'pruned', 'keep' => 'kept (edited)', 'skip' => 'skipped (host-owned)', 'unchanged' => 'unchanged'] as $key => $label) {
+    if ($c[$key] > 0 || $key === 'unchanged') {
+        $parts[] = "{$c[$key]} {$label}";
+    }
+}
+
+echo "\n".($result['dry_run'] ? 'Would sync: ' : 'Synced: ').implode(', ', $parts)."\n";
+
+if ($result['notices'] !== []) {
+    echo "\nNotices:\n";
+    foreach (array_unique($result['notices']) as $notice) {
+        echo "  - {$notice}\n";
+    }
+}
+
+echo "\nNever touched: Laravel Boost skills, AGENTS.md, CLAUDE.md, mcp.json, other .cursor/rules/*.mdc.\n";
+
+if ($result['laravel']) {
+    echo 'Next: run '.$paint('php artisan boost:update', '1')." so Boost's framework skills match this repo's package versions.\n";
+}
+
+exit(0);

@@ -12,7 +12,7 @@ class AgentsUpdate extends Command
                             {--no-composer : Skip running composer update joranski/agents}
                             {--skills : Only update skills rather than all files}
                             {--force-all : Overwrite EVERYTHING including files owned by other packages}
-                            {--no-prune : Do not prune deprecated v1.x skills or stale configs}
+                            {--no-prune : Do not prune skills and rules this package no longer ships, or stale configs}
                             {--no-boost : Skip refreshing Laravel Boost guidelines and skills (boost:update)}';
 
     protected $description = 'Update joranski/agents package and refresh installed skills and configs';
@@ -35,10 +35,10 @@ class AgentsUpdate extends Command
             );
 
             $constraint = $require['joranski/agents'] ?? null;
-            if ($constraint && preg_match('/^[\^~]?1\./', $constraint)) {
+            if ($constraint && preg_match('/^[\^~]?[12]\./', $constraint)) {
                 $this->components->warn("Notice: composer.json requires joranski/agents: {$constraint}");
-                $this->line("  'composer update' cannot cross the ^1.x -> ^2.x major semver boundary.");
-                $this->line('  Run <comment>composer require joranski/agents:^2.1</comment> to upgrade your dependency constraint.');
+                $this->line("  'composer update' cannot cross a major version boundary.");
+                $this->line('  Run <comment>composer require joranski/agents:^3.0 --dev</comment> to upgrade your dependency constraint.');
                 $this->newLine();
             }
         }

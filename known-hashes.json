@@ -1,0 +1,487 @@
+{
+    "paths": {
+        ".agents/rules/engineering.md": [
+            "d9bacce94e4f7fe02fdd8a93dfcee422ebaa3b1ef7e4b932e71971c1b7c9ba8f"
+        ],
+        ".agents/rules/guidelines.md": [
+            "27e62cd044482e24213d45d5944709c738ea76bede472b565f719f0a6323b198",
+            "4b14cf598f732d737f02205b904c997455b07a22ce0ad2c9149ae1746fb5e359",
+            "4daeb2014cb784689ddd2148bed906bfe5e1acb6432a7a1ed192ab5079ffb325",
+            "5000d6ffd05e80472bc352e1139ea6ec5b1735d6b604153c7147a1e1a7742f51",
+            "577f44d4524a4e7622829f1b0402ea0e40a950eaa25d2b0503e15c7a98bf8494",
+            "dd0b970961e87d4ab90f30d47928d0e80bd462b9fc8e569cc48d0f26bcfa0539"
+        ],
+        ".agents/skills/_shared/test-runner.md": [
+            "2cc1a51525cc4ddf93633cf4acf83fe3a97d8b1c508e149045ebc79cd740399f",
+            "4f2d9a58a150383e5451dd87a23b474a6b15e456de3d188763b44e6d87d25c19",
+            "b1ca3d2eb355d8cd4e5cebd2a3250a8dc7bcb32b33e66b8622ad90453f2b25b3"
+        ],
+        ".agents/skills/agents-md/SKILL.md": [
+            "003a47b61ba81742904c9d346839d6a6a2a3b70caa180e183096e5f61b42a474",
+            "3a1c1576be47cc2f2f86407c1393c311ed7cda9d048585aebabbc5ebed85a14e",
+            "5606e541fcefe8b01268a5d3a147e029dbd91f306878135ff06ca48993e9d788",
+            "8c87a8f1c53f2c3daa0b1365ae3d21ae51dc6b57afdf14a003d9355025b9c680",
+            "9ea7894f1dea9bef4cb7c8261e2901298624d2ddeb1e20a7cceafee9bf28c297",
+            "a2851d26ac1f483be87ea646e27ca88e52ee274e2d54fa5d625bfa591b163db1",
+            "b1361e02e66c218dd38378c85a9a89c2f0b69c06318e5f0e65166e26c7923e42",
+            "c9b9d6313004dd7c54bc6e80ba5b7a446743e31b5aae3aff40fbdd2e9fcb881c",
+            "d9bb5752dfb414f046234e10b4dde2672a207c3dfbfd0fb79ffde919dbd958c9"
+        ],
+        ".agents/skills/agents-md/examples.md": [
+            "276527b60b4527cd8f8095e78314c736ea08bcddc2700a422d57dbe2cf67fbfe",
+            "4d1745ea17454a576b2e8ce5e9ec43239aee96940be7dd66b3e3aeb716403eaf",
+            "925189348b0b10bc9439da2d75d314478c995e1bb0d49a27925e70aba90cc035",
+            "b00d4358139943991ac03840fa72b57c8e791b2b5d97817c9b3323e48c0f4587",
+            "e562e4b4f5675e6ec60886cabb342c81c06741c058dd0ac49ca00d1e38923de5"
+        ],
+        ".agents/skills/ai-media-pipeline/SKILL.md": [
+            "017b038c4193c5a59042cc0d9dc49b8d9a064bafe0bfcce557616cffae67ee4e"
+        ],
+        ".agents/skills/ai-media-pipeline/examples.md": [
+            "f7a719c6500b6d6032c5be23aed76d48508ff24ff91c0ce2d51d28b3821281be"
+        ],
+        ".agents/skills/auto-research-optimizer/SKILL.md": [
+            "b52edf21af8ffc3ad1b019f8aa0868905218199ae6a261a2d3da02d77ffc3dab"
+        ],
+        ".agents/skills/auto-research-optimizer/examples.md": [
+            "8b0ebdfbdeaa002d72f1af9c6f48785ebeb5fd15f30b5b1b6cae05c71c75b6c7"
+        ],
+        ".agents/skills/blueprint-code-review/SKILL.md": [
+            "cb71f8279db4da6a6fb8def692cbd673e802960e9c1d597d389b9b5b77596b0f",
+            "d0d0224276351f7d148a695bf7ceaf2e0217fa850d6b7bdc3c0453e7384fbfd2"
+        ],
+        ".agents/skills/brainstorming/SKILL.md": [
+            "7a238df1ebf0656c1da199aafafcc78c42f47bf4e56dd4e007a67afbb10af455",
+            "8eef47ba62814bfd694e4d4a778acb12d6381391251b47daa95a38eabedfca80",
+            "be4dafe33f1294ad103e0d10ce49d63480352c7b0a61f668203bd82b456cabe2",
+            "c92259f7bb496c3b07495865601e0ba9805a61f99d604f3a5c330cd12dc5c655",
+            "d81e54d54a9f394bb4030a4962ee662b67a209327b6b0437c443bce772d104d5"
+        ],
+        ".agents/skills/code-review/SKILL.md": [
+            "50909092b3a90940d695f0124ed4aa046778b0589606c1c7e340f6c0bf81dcd5",
+            "6da1c8fdab3627aea8a55127f4c0a859962f27c419e02ec30c6db054ff5a0262",
+            "ef968f7efa901bd8a7519c661c8896e8b5d8008fa7aaf811343d7c8e8207672a"
+        ],
+        ".agents/skills/code-review/code-reviewer.md": [
+            "346c608f8f3cc0873821b5c7adcf63414016bb2bea8bad7bfc9ec3918f2181c8",
+            "9f3c79d1d84773aa4e6a5b560158efa3616823b4f9b4976c56b22d21b2e09663",
+            "ec0064259c65fc9d71b2f4ffb660df92323cdb400a48dc8daf3a55604bb7c461"
+        ],
+        ".agents/skills/executing-plans/SKILL.md": [
+            "631682d4bcd9d7b09ca99581865247444ebaf4c7daab0a9e58e11aa2a4d67bb6",
+            "8337f1222f9d12fea6a8160174ab3b05b64f3a0a9f5b8f8d4c6c3b169ba66438",
+            "8b069913cb6faa3f7936a9fca19509f3987d96220ac7c86172e2b8d73243820f",
+            "b54596730d5ee57d23a40cef6fb18b590c11345c86619c73e631a8418bd5837c",
+            "d729f395d3902ef2e129111516ef3542d71b5e61ebc033bee609141f8c5efb95"
+        ],
+        ".agents/skills/executing-plans/code-quality-reviewer-prompt.md": [
+            "0136898751a6968ff51a007e36ebe0c626633c92ef5217b52e0a739ee6e80e87"
+        ],
+        ".agents/skills/executing-plans/implementer-prompt.md": [
+            "0d9fbb3a39607214fe8d259b7d56679cd38927480f9ed8a29891413d938ec386"
+        ],
+        ".agents/skills/executing-plans/spec-reviewer-prompt.md": [
+            "a9e710377ebc030fecdccd89051d88bcccb20102b547285ba9e0af6f7bbfc333"
+        ],
+        ".agents/skills/finishing-a-development-branch/SKILL.md": [
+            "1cc1b234a3af57ae84a705af0b6d3c9c598d8fa03661ef439aaaa9289fbf9b45",
+            "d1595d8632d81e5c3700730878e40d17f0d605f3bba2697cdf735b34b9b53b9e"
+        ],
+        ".agents/skills/flux-admin-crud/SKILL.md": [
+            "1ba886fd86446424af7f2cb3df46cf0c76bb0ae095e9e492deafc03768e06dae"
+        ],
+        ".agents/skills/flux-admin-crud/assets/flux-crud-stub.blade.php": [
+            "1f5e80128c62650b16c2c79c0807f3a2e66dab14f5d02f0e3c4b9430f3d02c25"
+        ],
+        ".agents/skills/flux-admin-crud/examples.md": [
+            "5cb98957cba1019030a244c58aa321edcf89ff73bca2b825b361bd7e07803ff9"
+        ],
+        ".agents/skills/fluxui-development/SKILL.md": [
+            "2c612f6d2247d89b5dd8b8de90609eb9276cdc7d4f91208c91e4cd042643783f",
+            "33820f7aec1c19ad847690efa8573965fd536afcbea49fab9656e7d73ca3d8f0",
+            "3888618d447f4c5da02bcef3077d9a5b4c1b13481800cf5fb660695d14271248"
+        ],
+        ".agents/skills/fluxui-development/assets/flux-crud-stub.blade.php": [
+            "1f5e80128c62650b16c2c79c0807f3a2e66dab14f5d02f0e3c4b9430f3d02c25"
+        ],
+        ".agents/skills/fluxui-development/examples.md": [
+            "92dd9b5a1db87f29175a58478961cafb1d98573ff8aa54ef5fe6d0cba6c59410"
+        ],
+        ".agents/skills/git-push/SKILL.md": [
+            "3d4bcf948c9e3c3144c8d3cf8f3d94c3b66bf3784fceb4ea79d67114e87c9cb6",
+            "44186b18fd353214eaedf56d130cfb545133030380810ce6598ea77936da6a72",
+            "64cf92c03016c954cb40228b5947db883887105a3d3aa5ba2fc22a6d3d683bb7",
+            "6b1ec93f7ea5365eb8e48818ab2a8cd5e61102522f935173e1033c2d26fe24b3",
+            "6de0cf51b90c20c5193cdcdd84276d6605e3322682df4fd9506e28015b0baf5c",
+            "7445124465f366ea2a60914002b3ae477d5171f88bb1a680caddbbdccd348d6f",
+            "893a1ee5d9e8de01ab780a5ea49db6f91246f42af0db617eec3e1ad9c13969aa",
+            "e9c6a3114679bf0894e2245e9eb5484c50c486c7c3e6bffa8b0a95b147717aff"
+        ],
+        ".agents/skills/git-push/examples.md": [
+            "38809dfd117c7a8092606bcc0576c569cb7ab063d87420fdc2f7f79dfc850010",
+            "e2c4179338c70f2685c976f29290e948355510f45771c57635047cf8f50628ad"
+        ],
+        ".agents/skills/grill-me/SKILL.md": [
+            "c758998e7d0babddc53149d98d99eda7b5f1543a9c81b5e51aedbe7ab82fda71"
+        ],
+        ".agents/skills/harden-logic/SKILL.md": [
+            "14ffa4ebaa8fe147e51d7639209719ef62f4fbf0d863d780aba45d74a548f373",
+            "813c50b5a50d86b152f7c3d435ea4680a75564e0689a3cab46b07deb1b4a79a6",
+            "a65c3d53ef3adf16cb5f00c930d14748b817f92edd09e555213bf9d59e18d0a9",
+            "db50bdd679398335de70141018d39e68142de8835e434330b3ef7bf79bacfb2a",
+            "e3f76548ee032f6ae091277e1c35ae1db27c7551a6046f51bf8ffdabbd3145b9"
+        ],
+        ".agents/skills/harden-logic/assets/AbstractSpecification.php": [
+            "c8b1600ca6bffe626a42957030b9f311fbec7907adc062b86090bd359e862a7d"
+        ],
+        ".agents/skills/harden-logic/assets/AndSpecification.php": [
+            "eda6fedc74d32c8c719e7e92fa1835b44d3b95622fb4680b018fa4ca523ad872"
+        ],
+        ".agents/skills/harden-logic/assets/NotSpecification.php": [
+            "afbc66fecbc24a4ce1d8ff9149d99647a237c24f4e43d7004abbd61ab47ca25d"
+        ],
+        ".agents/skills/harden-logic/assets/OrSpecification.php": [
+            "266cd44d2aaa21b03c09dfd9006210170d6c9691f67076bd440e957bd136832b"
+        ],
+        ".agents/skills/harden-logic/assets/Result.php": [
+            "088bc90832c05f2baeb7cbdd014ab553fc7d86ca7ed4f3f2cee17ec5bd9783b7"
+        ],
+        ".agents/skills/harden-logic/assets/Result.ts": [
+            "87f9051f4707158cb71250b17c114642c83b3626867c259c1d6d37f0d326b84e"
+        ],
+        ".agents/skills/harden-logic/assets/SpecificationInterface.php": [
+            "c8558a8ec0da619fff9b9f1425873bdacd669bfdb3d5d3a72686c94a9f3137b2"
+        ],
+        ".agents/skills/harden-logic/assets/result.rs": [
+            "7faa12e3000565dca47ec5913443de0a716291ebeceb8bd457a334d5fe3911a0"
+        ],
+        ".agents/skills/harden-logic/assets/templates/Action.php.stub": [
+            "4f8fbfe33f1453aa924e07205adbff6bea83890bf0362590e623597995697158"
+        ],
+        ".agents/skills/harden-logic/assets/templates/Spec.php.stub": [
+            "48c9ef0989ddac749cc344b34960dcf2e13f266c1ad909a474dcd41787a44c21"
+        ],
+        ".agents/skills/harden-logic/assets/templates/State.php.stub": [
+            "9c9f39b123710dffd12e39e42d9bf7d057ce54ffcc6ec6e40aff0d356fc24a0a"
+        ],
+        ".agents/skills/harden-logic/assets/templates/Test.php.stub": [
+            "7bb533774f71a7908602922f34c92d546becbad4baea982ab57e9cd8d0a7e8dd"
+        ],
+        ".agents/skills/harden-logic/reference.md": [
+            "3a3d26825403efbc73df7f0ee361fee9234126e0461f8e28f4cf9e4e117ac7bc"
+        ],
+        ".agents/skills/laravel-best-practices/SKILL.md": [
+            "5632eeea810f86a3f956c422b044fbabcd42aa40c5bd100a96b3449932e8832e",
+            "c58982b81f13278948a4fb7ce4f1c4cb066511cf07e92d1a38959e43cb84bf02"
+        ],
+        ".agents/skills/laravel-best-practices/rules/advanced-queries.md": [
+            "b96532f919138afcd29b662a0da26b29a21f2b07d35a0b0bc2ec655104f1a6a4"
+        ],
+        ".agents/skills/laravel-best-practices/rules/architecture.md": [
+            "8ebfeed441a31b76c8a0b83fe1f46b979d9f97579845c45c0c68c03bd2a0e250"
+        ],
+        ".agents/skills/laravel-best-practices/rules/blade-views.md": [
+            "c20d381bb00258c262342b4e2808d42012088bd6f753f5876ba63f0de862b15d"
+        ],
+        ".agents/skills/laravel-best-practices/rules/caching.md": [
+            "2e21f4269c3fe249a2d182f20cff1d923f3217f085a2006b66d29c168c786957"
+        ],
+        ".agents/skills/laravel-best-practices/rules/collections.md": [
+            "4b928c1ae3a9647be8d76a04a99910cd01f6f998901b952a6d83d64f6fb20e94"
+        ],
+        ".agents/skills/laravel-best-practices/rules/config.md": [
+            "8d3c7f1155693b4d6fc00954a05013ef7fb02c3fc8c51079c9971e50db112935"
+        ],
+        ".agents/skills/laravel-best-practices/rules/db-performance.md": [
+            "35fd91914f09f24a4b8f85e892d29fba710df7c1c2d8d88cdc772048ee2d2fbc"
+        ],
+        ".agents/skills/laravel-best-practices/rules/eloquent.md": [
+            "cec20653c32b72eb0e9f6fa5d5bad324889d4945544f5f8631c6d118ed8cc182"
+        ],
+        ".agents/skills/laravel-best-practices/rules/error-handling.md": [
+            "125860eb05e0ef0cadec6cbc8838b3dc31b52a0128dbb13f0d3fee973897a82c"
+        ],
+        ".agents/skills/laravel-best-practices/rules/events-notifications.md": [
+            "ed731f11286673ee0fe73f691137642f428fe1244e015ab64fcd08a61c792915"
+        ],
+        ".agents/skills/laravel-best-practices/rules/http-client.md": [
+            "899e83d06610df0ce30d2bed793239ee1c715c07ebaae0784ce5a5865e971b30"
+        ],
+        ".agents/skills/laravel-best-practices/rules/mail.md": [
+            "bed14d99c4908ca70c58e60405edd122e79e84b9d04166918a1668b457417f1b"
+        ],
+        ".agents/skills/laravel-best-practices/rules/migrations.md": [
+            "50ab20d16ad8c81cdef74ed3b9bd60c456a2a6521bd4fba2508ca1ae35fdca7d"
+        ],
+        ".agents/skills/laravel-best-practices/rules/queue-jobs.md": [
+            "b9c637332b9c95c32f9c661b1a69ee4edf77fa8ab7b515b7bae4038ab23662b7"
+        ],
+        ".agents/skills/laravel-best-practices/rules/routing.md": [
+            "b1dbd51a54d9cc0771b85d7eec13badf9fb19fa78f1ef1749c2bb9db00c0f311"
+        ],
+        ".agents/skills/laravel-best-practices/rules/scheduling.md": [
+            "30cd6ddac1ceb3f3629422e7b1cef71e7ae7d5cb238c76f5c531636f00cb11dc"
+        ],
+        ".agents/skills/laravel-best-practices/rules/security.md": [
+            "2d05fd92c7b30cff883ae36579bfe8b0af4e130214aa14721868ec28458fb00b"
+        ],
+        ".agents/skills/laravel-best-practices/rules/style.md": [
+            "4100b4ea2b95e438f79a5f682ecf050fdcb28520bf8e59fcdf7729358b5e11d7"
+        ],
+        ".agents/skills/laravel-best-practices/rules/testing.md": [
+            "97a5a3bbbb84e8e9a74c98b60062bc95ddb7c48ef4b84adee691c76c0e2898f2"
+        ],
+        ".agents/skills/laravel-best-practices/rules/validation.md": [
+            "dc91dee52f8463b77fc43260a45be627349868032a4adb9239b3647bc0206dfc"
+        ],
+        ".agents/skills/mcp-builder/SKILL.md": [
+            "50a9a35b3556227ef66efdffd7009fd1ebb0bfb19e82eb128155ebe86982d188",
+            "ecfa5450921a5c29f109cb44cdb21991126d134ea946429131c249c4d5bb647c",
+            "fd17c9dbb223edd9a332f3f7b671f8469a2c17cd218d8a8e2c219bc6ccbece84"
+        ],
+        ".agents/skills/night-shift/SKILL.md": [
+            "9abb1b26ec90c0a51afd2bbe888dd39d320918126b82aa23c875397554a1b2dd",
+            "edc41ac78ee662e6893f26d7cdcaa20da3a13798e307847e519bd46c96eb66ed"
+        ],
+        ".agents/skills/package-extraction-scout/SKILL.md": [
+            "1b54d1cc7237e6739bdc26c86e6c5a0fa175fde54494cc79c479349f9f94f6b8",
+            "23f6184745e06665c5e8f7e8b8548fb3e4087b487d304fa353a4fe607a370014",
+            "2e82ab717483956f7b62d863682f4f6544fad357770e9f97c7d564b57f7d0b20",
+            "63732629d41efb379fd5dab120b5ec3ef7c9fc2b3ea8ca1f17668d9d7490fd6e",
+            "b68275710cf0d9bec88a9351c7d2041bd99ff0d1984344530ca3f601c91f746b"
+        ],
+        ".agents/skills/pest-testing/SKILL.md": [
+            "02d169d0ed965d2f3c5dcd4e7e9a6d006cf35bbf04ba400ac88aca9819982fee",
+            "1d04d480d22f696981113ba0c08763ef7be0048312cb48ae327a5cf7e0c84a47",
+            "23161859d79a27e1e41f25682011a892d4d150316bbc53d3a0b0113c6c1b9c46",
+            "3fd1c2821cdd94897e75cb94e00007616af051bb180c183850e84d84322631ec",
+            "a8fdd7fadf1d1bcfd0a86c9671621f993392ba4eeb905e2616bd786df9885232",
+            "ca7436b4a22bfbeeb00b52c01f8669e3e0958de74395737d454c49907eed88b6"
+        ],
+        ".agents/skills/pest-testing/examples.md": [
+            "66b086e70f6e65338735791cf84fa2f43f55648189408bee813fffc86790bd69",
+            "90df228b445f275fb3533c56bfdad0fb2fa49b9585326a972c9ba0a030cb7496"
+        ],
+        ".agents/skills/polyglot-architecture/SKILL.md": [
+            "7cb0b57cad3bdc70c9fbae6dd39b7eac56dd33c82b47cd186cc019d40103a537",
+            "939c93a4c86341ec61c50a08c674caecd4616d1a7120480959fbaeaa013cad3a",
+            "ddf5c1d290ca21182c34fca5ff6272aa6e2284782fcf88cf0a9dbf44fb715f08"
+        ],
+        ".agents/skills/polyglot-architecture/examples.md": [
+            "01a1912f1f52b92d944b84ec6c86c1cda175d3ca5b2a88e44ce37f8ef0467002"
+        ],
+        ".agents/skills/react-development/SKILL.md": [
+            "964cd14e20316c571eeb63bc2b2fbbbf793322ca7e9738f95a5ee9a09134134d",
+            "a2eba8dc018bc907a21dace114a22e42fe960aab285241ff761f24d8bc5bcb19",
+            "a531cd7deeba92e732c7246f6f45c8841b78732c03090928f5699784ff5c030e"
+        ],
+        ".agents/skills/react-development/assets/react-crud-stub.tsx": [
+            "675ac5560e2c009b4ed0ce5a2b4db4a23f428d6c0029853545a6d1a7b78b0c78"
+        ],
+        ".agents/skills/react-development/examples.md": [
+            "3fb3f37a9e0ef8bf0c351528cce86e7119931ca66f96d9197c15e6bcb0505be6"
+        ],
+        ".agents/skills/receiving-code-review/SKILL.md": [
+            "284cb85848d7474ec32644ac49202aa442970d47a2f5bfdd535c477a3050c8a8",
+            "7414a173e98cf5279c6be2c2ec15c5f6f03fe4d74f1e946b193757f81684241d",
+            "ecaec0c34fe57184a74d9e4a2dce4773b29d9395c0ff48f650cdde2098df76da"
+        ],
+        ".agents/skills/removing-dead-files/SKILL.md": [
+            "4ac09407b2859ce309d739725b7f1c72973a9d07b79acc50f5dad1a153963807",
+            "5cecc202bf05d2bce37718f0996233814f957c43e153e57610def14e1b1a8755",
+            "6ae30ab67fb3016b5ef8251d0397b4d1fca80f5732ff11371ad698d03d6aec82",
+            "7bbdf7578e40867aa97bce48da9e0a3b9b1f779e106fb9c37524c661fb9485a1"
+        ],
+        ".agents/skills/requesting-code-review/SKILL.md": [
+            "2bc9ea5b69cbfb38e2a627086d7d75d89c65229a4454234eacb9633eee6220da",
+            "5a2ef6897fc8cb14ed19d7280c2c99bfbcbd1ef72d3c88630edf6ce0b33c72fb"
+        ],
+        ".agents/skills/requesting-code-review/code-reviewer.md": [
+            "7f5328dca12cb200005ae9d4386f63a9b0acb735ece57f82db206b4a3189ccae"
+        ],
+        ".agents/skills/second-opinion-review/SKILL.md": [
+            "38dbd2768dbe168871ca2fb95c74d9cebde6ffc15d663701a759c9a442e61d07"
+        ],
+        ".agents/skills/simplify-pass/SKILL.md": [
+            "75ae8f5bb7ae1728d2e63fe9c11ab395d1539cc5417eadaa496489f43dc5f51e"
+        ],
+        ".agents/skills/single-flow-task-execution/SKILL.md": [
+            "1081733a565a6ef8169b9d287d104eeb8ead46453482b68269feebb674318de8",
+            "1460d70e08a1fe3d7bcbc0d4c74032c21a9744acdef4c7a429b021efa92f6488",
+            "33776826efb0b1baf4dfd7fa878e00edd250c7022df5c03d391f566a323a1c01",
+            "3839007596ebcf804c6687ae6e47f843935c091a15920f3c75aefd8176fb4cc1",
+            "883db9e048afe899ce0667ffa91d353730bec58a784473925b9ddb0e3403d05e"
+        ],
+        ".agents/skills/single-flow-task-execution/code-quality-reviewer-prompt.md": [
+            "0e87ba80dd6a45bf90be4af2ff8a71dfdc034cf749947820e2ca572e5164437d",
+            "94ae70148a575197057bb4157b938685ac5f1ed67ea1de8c44b0027b263077bd"
+        ],
+        ".agents/skills/single-flow-task-execution/implementer-prompt.md": [
+            "c4f17136ca82f94349ee37f83db067a36c2f4d0f6ae0d499a89fb64f165abd6d"
+        ],
+        ".agents/skills/single-flow-task-execution/spec-reviewer-prompt.md": [
+            "01b47457dfd7f82cafe14642120f716a03b777916dc8375e74f2d7d0a48e851d"
+        ],
+        ".agents/skills/system-cli-and-bash/SKILL.md": [
+            "2ce102843c71882a1ccaf246a5bc969221f903570ac493749511c6f80df47484"
+        ],
+        ".agents/skills/system-cli-and-bash/examples.md": [
+            "7d6352b05a6cd9b65eeb6bfa18ddb445afbd44499fbbc8834db88756b58d18db"
+        ],
+        ".agents/skills/systematic-debugging/CREATION-LOG.md": [
+            "8a7d50e0ab13e992bfacd0f58fe3b93b74359137065255a5d6ca54cbdec51983",
+            "b69a088f89dc8c5ab8828e4040f151c554957a811a465a426cbe0ec85567ed50"
+        ],
+        ".agents/skills/systematic-debugging/SKILL.md": [
+            "31c75daf1893092018efb63fe4c2983520cd8db79ea3c0f542799b422ec1b7bd",
+            "47e5a3501e13978addfcca666e32727c04c0d1ab5aadfe2e562ba3ce98b6ea3a",
+            "8587991739b254e649b7a1e8f844070aa7b72998dfa4766e448a1f0ee851c270",
+            "963faf83f9fa4f53d052d70997cd92fc646c6260ac615705e9d4b0931a2506c3",
+            "d5a6b33fa497aa97bd5ee2f89701d22370a0a8dc23534c26df96f09c251bbcea"
+        ],
+        ".agents/skills/systematic-debugging/assets/find-polluter.sh": [
+            "9e9b1c3316f17b7a649d4b0ce22d5c102c9667ca05d7809dd6680c0a277d25e0"
+        ],
+        ".agents/skills/systematic-debugging/condition-based-waiting-example.ts": [
+            "40ae5ebe497fdf310200e43fe986552546d0a22837c0d39e855db1cfd33eb88e"
+        ],
+        ".agents/skills/systematic-debugging/condition-based-waiting.md": [
+            "e89fec8400d6cd50f43407cec9fab50976ba4d55d0ec2eb51c0bd68036b54c26"
+        ],
+        ".agents/skills/systematic-debugging/defense-in-depth.md": [
+            "1e175fb86fc357e58c6aebf5441e481e1b7868b4380c0456b63a17eefbd18ba7"
+        ],
+        ".agents/skills/systematic-debugging/examples.md": [
+            "684cee89a7d5813f31ff3e4b64b94edb86a631d2114dc1cb5810933f854dc142"
+        ],
+        ".agents/skills/systematic-debugging/find-polluter.sh": [
+            "6462747eae9b175ac145b78bcfaeab755654a75e32637f08eb633f065a9e1d7c"
+        ],
+        ".agents/skills/systematic-debugging/root-cause-tracing.md": [
+            "044f7e2d0fdf40a52487f9b27d6c26f3cb0e407fe2dd3199fe209c93fc85ad58",
+            "a81bee9448794d261b4aca8487c595d11ff4bd4e10a5f96bca1117dd32527050"
+        ],
+        ".agents/skills/systematic-debugging/test-academic.md": [
+            "fe2ba480d78ac0d686dc025f41c2a32a43d642bf533f91b0c6053a04d35d6486"
+        ],
+        ".agents/skills/systematic-debugging/test-pressure-1.md": [
+            "0b6a915db0054577819834c79be9eb614e97bddba10d73768e1fbe91cfed048a"
+        ],
+        ".agents/skills/systematic-debugging/test-pressure-2.md": [
+            "b2030aeffba07050e8ad573ddf87486457c4a016a786bb326235bebd856f2016"
+        ],
+        ".agents/skills/systematic-debugging/test-pressure-3.md": [
+            "96b50a52e2c7989c9cf20fb752c47c1e9a3a70dc362f8f7989f8f5b64dac7708"
+        ],
+        ".agents/skills/tailwindcss-development/SKILL.md": [
+            "9cc3f98f5124f2aa44522aaafb59c5a80ccce1b475a9b07349cf07cc4b2ba2eb",
+            "cb55f03a9c2c5deac99980f77f9b8521bf4f3a607ea959db4ba1700da9381691"
+        ],
+        ".agents/skills/taste-differential-ui/SKILL.md": [
+            "6dcea3a23c6257deaefa4a27dec1d6d3da81b1d9076a3602f5f7e9008c75697e",
+            "d3ff99180147e9d5fef39c5f239aebe9d9288773a6af9018832b861ade3dcd4f"
+        ],
+        ".agents/skills/taste-differential-ui/examples.md": [
+            "2616c9c7bf3619ebcb0dc55097a6137c89e9d66f21b01b17106d72e26c49d34e",
+            "59d58bcb8e4ee6db835f376249919c3117746ad375b68f9a3419b1043fdc6152"
+        ],
+        ".agents/skills/test-driven-development/SKILL.md": [
+            "260473674626592dedeaaca697dbc73cdd4484f0393544040eb187025e48dc85",
+            "7dee67b4af6bdccc7a914ca34533184d64592d0f5b23aeae631538168db14994",
+            "eac0e5dee856abe83dc44eac717199c671a74beb4df8bbe8167164e808d1d264"
+        ],
+        ".agents/skills/test-driven-development/testing-anti-patterns.md": [
+            "bde453bc258f06543987477c837939afaa774ea2acbd9f308d702fc452bc4283"
+        ],
+        ".agents/skills/using-git-worktrees/SKILL.md": [
+            "29e624261cead4782d0503efd69f31e7f379b7aeab94cb2866bcf4a6dfdc9c1e",
+            "2c8031cbc0837a887e6a3a3508776fe2a10d612799cd69105779cadf196f13e1",
+            "7d4bab4e753a5db7eabdad013a3442ef50f835fef137348f47849109034868fc",
+            "bd265459b43116ea388315d3b767295cdc79e27efd8849ee0da3c84f269c8d08",
+            "f379186e6e72328efb8b5f35079adb39cec95aa0dc5d7858b8cf8214aa09db7c"
+        ],
+        ".agents/skills/using-superpowers/SKILL.md": [
+            "8ff4db8ab4acace1e07f7be310f248a41b03383278f40db403bfaa4e5001864a",
+            "c3096bc9fa59749f01ed22d053e379de9edb7a833d3de57bbed22e1e85fab500",
+            "c345c0b37078fdd557c22ad70ab85888e58924a8876390ef4784c9c6b55dfdd5"
+        ],
+        ".agents/skills/verification-before-completion/SKILL.md": [
+            "0a1b20bb138eccc13d2f3e70c4c98f1a40b42f36c4deeadb0a08cbf992d7d91f",
+            "1b3c2a6cc1c3a3a72e8762a5ffa10bd9b9b932a5aa811c670e1f6349fb3d3b33",
+            "70b2d7697c58e46b34c5e1a864c91c27786e8b60e192b240ba7e00c55eaf8dc6",
+            "d7c3bf703716b108071cc47272e865338f559520c6c9c757664acb819d8534ef",
+            "dddb6a46d412638fc39797ed059309a71e5668cb6e43978ed3e6c75da53539de"
+        ],
+        ".agents/skills/voice-spec-ingestor/SKILL.md": [
+            "7e3581cf87683e0d1207536cad34bdf5ef83ad2d8b18d9633a902bdd41e689e7"
+        ],
+        ".agents/skills/voice-spec-ingestor/assets/build-lexicon.ps1": [
+            "2dd8e9973522564d7b74229c35249b0cad96b4d1bf0d7b34943386d92858aa82"
+        ],
+        ".agents/skills/voice-spec-ingestor/assets/build-lexicon.sh": [
+            "9f0b412f36836701d72b5136dc32e7ad7f533f458dccfbec9934ad6514a15b4d"
+        ],
+        ".agents/skills/voice-spec-ingestor/examples.md": [
+            "8f2a61586b1261eb93191246de43a955532f30f131c527e17d704c71baf7bc49"
+        ],
+        ".agents/skills/volt-development/SKILL.md": [
+            "d5f4228a0613d51f0844daa4da2da1ad2d53b6cfce1baa657ac1a029dc322185",
+            "e84cfe67a519f4f33d87abb14c31eb25055cffaaca9d56a7702ca9de07a1affa"
+        ],
+        ".agents/skills/web-compliance-audit/SKILL.md": [
+            "c52004e1c3b5365f603f652a7bb773362507d45b6b71a4d840577696383c3fe0"
+        ],
+        ".agents/skills/web-compliance-audit/assets/compliance-snippets.md": [
+            "bb7f18b761531485b6d08fe94983f40cceaabcc69c294628dbaf542df2e583d0"
+        ],
+        ".agents/skills/web-compliance-audit/examples.md": [
+            "49902d5973d1c30983be454fc68acdd3243fffc89ef5fefd425dde48ea28f120"
+        ],
+        ".agents/skills/webapp-testing/SKILL.md": [
+            "268b49162d556af191f215a6a24deeb7ba304d4c21153013c9474a0578881051",
+            "b4ab7381b0eb99227c1f9ff3d35f07784759e540abaddb945e297049f41fa8af",
+            "dbb5ec2e430f2ee42749945d036423daa5dca52e12d5d1159bf99f7898bd0e64"
+        ],
+        ".agents/skills/writing-plans/SKILL.md": [
+            "1bfa60bc1f89426df134c486116f766a8d1324c19a958c75c4ca3659e85ff5ff",
+            "1d808d55bfe4a3d7008f1200eb74d94f06c34e25ee84ace07083440b0d20753a",
+            "307988e2f3b6c3316dcb1eead5a2b1829de00b7acc530312aef1fdefb3930ab8",
+            "69502757275696c7f7f7489230fc66f65cb9a215672c1f5e86fd61aec7d743ac",
+            "c30b25edf071f3b15d39aacaab0d15be696aa0e4fdede1151d92a2da48ea4b19",
+            "f771a0e5be20a5aae8808bea5d611f186ae1398aaba77791e96c1ab43e58dd95"
+        ],
+        ".agents/skills/writing-skills/SKILL.md": [
+            "a1a17f92c0b1d2469ddd60b537c7d36a2393dd088bca19bdcc745a32aa322010",
+            "a3ec53d691b35ebd2df56f4c8bf8f88a4fe6ee476c135073eaaae44b102bb7f5",
+            "ab28b476a909535988d65d3c7f65615c88ba8515b0bb4d854a830fbcbd7c71c2",
+            "e08de5b12681b9a5a0b4b0304ed9d67a9693ca9527ca60c4cdc896443fb0464a",
+            "ec31deef904b3570b78dbc9d705a2063c70bcecc4e34d1f69c497a53c5096705"
+        ],
+        ".agents/skills/writing-skills/antigravity-best-practices.md": [
+            "85e45f7001733473d0552aab56a8bd59bf8039abfe5e9498b3ff24277518ea93"
+        ],
+        ".agents/skills/writing-skills/examples.md": [
+            "66301680d3ffe33619e8a26945f51ba1b40aaa15fc7fd12873e1a3e4d16549d1",
+            "72b84cb1c471f3be08fd858de5053a48175b6382c616876ddb5800b4474d01a1"
+        ],
+        ".agents/skills/writing-skills/examples/AGENTS_MD_TESTING.md": [
+            "042628fdb931a3cd6a595e44e2dcd1b1be9b3b5e106b92e80a82919331445bcf",
+            "6e34fd3c41b648c01c714441950f4f19c6ee9e142e7271ca06da11ef2b47df3b",
+            "ef8764c6ec65a8f100fa135632acc2cba14a69997fb4aaf52e25c5aea974273b"
+        ],
+        ".agents/skills/writing-skills/graphviz-conventions.dot": [
+            "e2890a593c91370e384b42f2f67b1a6232c9e69dddea7891a0c1c46d7b20b694"
+        ],
+        ".agents/skills/writing-skills/persuasion-principles.md": [
+            "028f5fcd6ba7ab55bea9363e38e95542ee6c1eb708a69e81a0a6a8093bda9a6e"
+        ],
+        ".agents/skills/writing-skills/render-graphs.js": [
+            "e99e08ca926646b5a969c7930ef4c8aa88feef8b57c4d7fb762ff624726f22f0"
+        ],
+        ".agents/skills/writing-skills/testing-skills-with-subagents.md": [
+            "6aa584a30b1a7de972e580267e7751b5b4b9704512631d558bd21c8a487fade1",
+            "9843b4d4424217fece85a8031b0f7f2298194278e02e68e9fca9bea3d6a760d5",
+            "a524db02b94fc7eaf58712814478370a358dab1c97eb6e0d386288cc77a87945"
+        ]
+    }
+}

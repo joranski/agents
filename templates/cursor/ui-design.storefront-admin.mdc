@@ -1,0 +1,45 @@
+---
+description: Storefront and admin UI rules for Laravel + Livewire 4 + FluxUI Pro + Tailwind CSS. Apply when editing Blade views, Livewire components, or CSS.
+globs:
+  - "resources/views/**/*.blade.php"
+  - "app/Livewire/**/*.php"
+  - "packages/**/resources/views/**/*.blade.php"
+  - "resources/css/**/*.css"
+alwaysApply: false
+---
+
+# UI Design (FluxUI Pro + Tailwind)
+
+Zero FilamentPHP. Build every screen with Livewire 4 + FluxUI Pro + Tailwind. For component props and variants use Boost's `fluxui-development` skill or `search-docs`; don't guess APIs.
+
+## 1. Component hygiene
+- Reach for `<flux:*>` Pro components (modal, flyout, navlist, table, tabs, dropdown, multi-select) before custom Alpine or raw HTML.
+- Every `@foreach` that renders Livewire, Blade, or Flux elements has a stable, unique `wire:key`.
+- Semantic colors (success, danger, warning, accent) only for real data states, never decoration.
+- Zero console errors or Livewire morph warnings.
+
+## 2. Visual system
+- Restraint: 1px hairline borders (`border-zinc-200 dark:border-zinc-800`) and layered surfaces (`bg-zinc-50 dark:bg-zinc-900/50`) instead of heavy shadows or gradients.
+- Neutral zinc/slate palette with one accent color for primary actions.
+- Headings: `tracking-tight text-balance`. Metadata: `text-zinc-500 dark:text-zinc-400`.
+- `tabular-nums` on every price, count, quantity, percentage, date, and financial figure.
+- Every view works in light and dark mode and stacks cleanly on mobile.
+
+## 3. Storefront pages (Vercel / Stripe feel)
+- Generous whitespace, clear type hierarchy, clean bento or asymmetric grids.
+- Exactly one unmistakable primary CTA per viewport; product grids align prices and CTAs across rows (Grid or Subgrid).
+- Skeletons (`animate-pulse`) or inline `wire:loading` spinners, never full-screen blocking overlays.
+
+## 4. Admin screens (Linear feel)
+- Dense, scannable layouts with tight padding.
+- Quick edits in flyouts (`<flux:modal variant="flyout">`) or split panes, not full-page redirects.
+- Tables: sticky headers, right-aligned `tabular-nums` numeric columns, a useful empty state, pagination.
+- Keyboard: logical tab order, Enter submits, Escape closes, visible `focus-visible` rings.
+- CRUD screen pattern: query in a computed property with eager loading; validate in the component; hand writes to a domain Action (harden-logic `Result` pipeline for stateful workflows, surfacing failures as form errors); authorize every action through the model's Policy; cover list, create, update, and one failure path with a Livewire component test.
+- Replacing a legacy Filament screen: keep the route and permission names, port tests first, then delete the Filament classes.
+
+## 5. Forms
+- Group fields by mental model in titled sections (`<flux:card>` or fieldsets) with short helper text; never 15+ flat inputs.
+- Single column by default; pair only tightly related short fields (City/State/Zip, Min/Max).
+- Hide advanced options behind tabs, toggles, or `<flux:accordion>`.
+- Inline validation errors under each field; destructive or irreversible actions require a confirm modal.

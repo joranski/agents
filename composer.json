@@ -1,8 +1,8 @@
 {
     "name": "joranski/agents",
-    "version": "2.4.2",
-    "description": "AI agent skills, smart deploy (git:pull), safe push (git:push), and Night Shift automation for Laravel projects.",
-    "keywords": ["laravel", "agents", "deploy", "git", "ai", "react", "fluxui", "livewire", "volt", "skills"],
+    "version": "3.0.0",
+    "description": "Lean portable agent skills, universal engineering rules, and an idempotent sync (bin/sync-agents) for Laravel + Livewire + FluxUI projects, plus git:pull, git:push, and Night Shift.",
+    "keywords": ["laravel", "agents", "deploy", "git", "ai", "fluxui", "livewire", "skills"],
     "license": "MIT",
     "authors": [
         {
@@ -20,6 +20,7 @@
         "laravel/mcp": "^0.5 || ^0.6 || ^0.7",
         "laravel/pint": "^1.0"
     },
+    "bin": ["bin/sync-agents"],
     "autoload": {
         "psr-4": {
             "Joranski\\Agents\\": "src/"
